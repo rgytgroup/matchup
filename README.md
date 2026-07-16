@@ -32,7 +32,20 @@ matchup/
 
 Comandos raíz: `npm install`, `npm run build`, `npm run typecheck`, `npm run dev:web`, `npm run dev:api`.
 
+## Puesta en marcha (local)
+1. `npm install` en la raíz.
+2. Copiar `.env.example` a `apps/api/.env` y llenar las claves reales (ver checklist abajo).
+3. Copiar `apps/web/.env.example` a `apps/web/.env` (por defecto apunta a `http://localhost:3000`).
+4. Crear las tablas: `npm run prisma:migrate -w @matchup/api`.
+5. En dos terminales: `npm run dev:api` y `npm run dev:web`.
+
 ## Estado
-🚧 En construcción — fase MVP (plan de ejecución de 6 semanas).
-Cimientos listos (monorepo, contrato compartido, modelo de datos, esqueleto de pipelines y páginas).
-Pendiente: cablear las integraciones reales (Gemini, Replicate, Stripe, Supabase, Resend) — marcadas con `TODO(...)`.
+🚧 Fase MVP. **Flujo de auditoría cableado de punta a punta**: intake con upload →
+Stripe Checkout → webhook idempotente → moderación + análisis con Gemini (validado
+contra schema) → PDF → email con Resend → reporte web por slug.
+
+Integraciones conectadas: Gemini, Supabase Storage, Stripe, Resend, PDF (pdfkit),
+y Replicate (SDK conectado). Pendiente de afinar con claves/pruebas reales:
+- Tier de fotos: preparación del `.zip` para el trainer LoRA y el **QC de parecido** (`TODO(qc)`).
+- Cola/worker real para el pipeline (hoy corre en segundo plano tras el webhook).
+- Cron de borrado de fotos a 30 días y textos legales definitivos.
