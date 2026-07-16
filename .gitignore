@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+
+# Builds
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Entorno (los valores reales NUNCA van al repo)
+.env
+.env.local
+.env.*.local
+
+# Prisma / DB local
+*.db
+*.db-journal
+
+# Deploy
+.vercel/
+
+# Logs y varios
+*.log
+npm-debug.log*
+coverage/
+.DS_Store
+Thumbs.db
