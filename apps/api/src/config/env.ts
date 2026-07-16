@@ -1,0 +1,32 @@
+import { z } from 'zod';
+
+/**
+ * Validación de variables de entorno (SPEC §7).
+ * Solo DATABASE_URL es obligatoria para arrancar en dev; las claves de
+ * terceros se validan de forma perezosa por cada proveedor cuando se usan,
+ * para no bloquear el arranque local sin todas las integraciones.
+ */
+export const envSchema = z.object({
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL es obligatoria'),
+  SUPABASE_URL: z.string().default(''),
+  SUPABASE_SERVICE_KEY: z.string().default(''),
+  GEMINI_API_KEY: z.string().default(''),
+  REPLICATE_API_TOKEN: z.string().default(''),
+  STRIPE_SECRET_KEY: z.string().default(''),
+  STRIPE_WEBHOOK_SECRET: z.string().default(''),
+  RESEND_API_KEY: z.string().default(''),
+  APP_BASE_URL: z.string().default('http://localhost:5173'),
+  PORT: z.coerce.number().default(3000),
+  ADMIN_ALERT_EMAIL: z.string().default(''),
+});
+
+export type Env = z.infer<typeof envSchema>;
+
+export function validateEnv(config: Record<string, unknown>): Env {
+  const parsed = envSchema.safeParse(config);
+  if (!parsed.success) {
+    const fields = parsed.error.flatten().fieldErrors;
+    throw new Error(`Configuración de entorno inválida: ${JSON.stringify(fields)}`);
+  }
+  return parsed.data;
+}

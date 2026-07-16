@@ -1,0 +1,110 @@
+// Modelo de datos de MatchUp (SPEC §3). Prisma es la ÚNICA capa de acceso a datos.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Tier {
+  AUDIT
+  AUDIT_PLUS_PHOTOS
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  REFUNDED
+}
+
+enum SubmissionStatus {
+  UPLOADED
+  ANALYZING
+  DONE
+  FAILED
+}
+
+enum PhotoJobStatus {
+  QUEUED
+  TRAINING
+  GENERATING
+  QC
+  DONE
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  tier            Tier
+  stripeSessionId String?     @unique
+  status          OrderStatus @default(PENDING)
+  amountUsd       Decimal     @db.Decimal(10, 2)
+  createdAt       DateTime    @default(now())
+  submission      Submission?
+  photoJob        PhotoJob?
+}
+
+model Submission {
+  id            String           @id @default(cuid())
+  orderId       String           @unique
+  order         Order            @relation(fields: [orderId], references: [id])
+  questionnaire Json
+  bioText       String
+  photoUrls     String[]
+  status        SubmissionStatus @default(UPLOADED)
+  createdAt     DateTime         @default(now())
+  report        Report?
+}
+
+model Report {
+  id           String     @id @default(cuid())
+  submissionId String     @unique
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  resultJson   Json
+  pdfUrl       String?
+  publicSlug   String     @unique
+  createdAt    DateTime   @default(now())
+}
+
+model PhotoJob {
+  id           String         @id @default(cuid())
+  orderId      String         @unique
+  order        Order          @relation(fields: [orderId], references: [id])
+  provider     String
+  trainingId   String?
+  status       PhotoJobStatus @default(QUEUED)
+  outputUrls   String[]
+  acceptedUrls String[]
+  costUsd      Decimal?       @db.Decimal(10, 2)
+  createdAt    DateTime       @default(now())
+}
+
+// Analítica interna mínima (SPEC §3): visita checkout, compra, reembolso, etc.
+model Event {
+  id        String   @id @default(cuid())
+  type      String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([type])
+}
+
+// Ledger de idempotencia de webhooks de Stripe (SPEC §8/§9):
+// procesar el mismo evento dos veces no puede duplicar análisis/emails/jobs.
+model ProcessedWebhook {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  createdAt     DateTime @default(now())
+}
