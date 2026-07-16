@@ -18,5 +18,21 @@ React + Vite + Tailwind (Vercel) · NestJS + Prisma (Railway) · Supabase · Gem
 3. Pedir tareas referenciando el plan de ejecución y el SPEC, por ejemplo:
    `"Implementa la página /start (SPEC §4.2) con upload de fotos y cuestionario."`
 
+## Estructura del monorepo (npm workspaces)
+```
+matchup/
+├── packages/
+│   └── shared/     Contrato compartido: schema zod del reporte (SPEC §5), tiers/precios, i18n
+├── apps/
+│   ├── api/        Backend NestJS + Prisma (módulos por dominio, webhook Stripe idempotente)
+│   └── web/        Frontend React + Vite + Tailwind (router con las páginas de SPEC §4)
+├── prompts/        Prompts de IA versionados (leídos en runtime, nunca hardcodeados)
+└── .env.example    Variables de entorno (SPEC §7)
+```
+
+Comandos raíz: `npm install`, `npm run build`, `npm run typecheck`, `npm run dev:web`, `npm run dev:api`.
+
 ## Estado
 🚧 En construcción — fase MVP (plan de ejecución de 6 semanas).
+Cimientos listos (monorepo, contrato compartido, modelo de datos, esqueleto de pipelines y páginas).
+Pendiente: cablear las integraciones reales (Gemini, Replicate, Stripe, Supabase, Resend) — marcadas con `TODO(...)`.
