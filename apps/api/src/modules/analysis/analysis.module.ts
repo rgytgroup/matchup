@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { OrdersModule } from '../orders/orders.module';
 import { SubmissionsModule } from '../submissions/submissions.module';
 import { ReportsModule } from '../reports/reports.module';
 import { ANALYSIS_PROVIDER } from './analysis-provider.interface';
@@ -7,7 +8,7 @@ import { AnalysisService } from './analysis.service';
 import { AnalysisPipelineService } from './analysis-pipeline.service';
 
 @Module({
-  imports: [SubmissionsModule, ReportsModule],
+  imports: [OrdersModule, SubmissionsModule, ReportsModule],
   providers: [
     AnalysisService,
     AnalysisPipelineService,

@@ -27,6 +27,10 @@ export class ReportsService {
     return this.prisma.report.findUnique({ where: { publicSlug: slug } });
   }
 
+  findBySubmissionId(submissionId: string) {
+    return this.prisma.report.findUnique({ where: { submissionId } });
+  }
+
   private newSlug(): string {
     return randomUUID().replace(/-/g, '').slice(0, 16);
   }

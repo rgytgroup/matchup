@@ -38,7 +38,7 @@ export class OrdersService {
   findById(id: string) {
     return this.prisma.order.findUnique({
       where: { id },
-      include: { submission: true, photoJob: true },
+      include: { submission: true, photoJob: true, user: true },
     });
   }
 }

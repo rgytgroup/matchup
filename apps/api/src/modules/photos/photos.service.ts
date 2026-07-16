@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventsService } from '../../common/events/events.service';
 import { PromptLoaderService } from '../../prompts/prompt-loader.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StorageService } from '../../storage/storage.service';
 import { PHOTO_PROVIDER, type PhotoProvider } from './photo-provider.interface';
 
 /** Pipeline de fotos del tier premium (SPEC §6). */
@@ -13,10 +14,18 @@ export class PhotosService {
     @Inject(PHOTO_PROVIDER) private readonly provider: PhotoProvider,
     private readonly prompts: PromptLoaderService,
     private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
     private readonly events: EventsService,
   ) {}
 
-  async startJob(orderId: string, photoUrls: string[]): Promise<void> {
+  /** Arranca el entrenamiento + generación para la orden (tras pago premium). */
+  async startJob(orderId: string): Promise<void> {
+    const submission = await this.prisma.submission.findUnique({ where: { orderId } });
+    if (!submission) {
+      this.logger.warn(`startJob: sin submission para la orden ${orderId}`);
+      return;
+    }
+
     const job = await this.prisma.photoJob.upsert({
       where: { orderId },
       update: { status: 'TRAINING' },
@@ -30,7 +39,8 @@ export class PhotosService {
     });
 
     try {
-      const training = await this.provider.train(photoUrls);
+      const signedUrls = await this.storage.signUrls(submission.photoUrls, 3600);
+      const training = await this.provider.train(signedUrls);
       await this.prisma.photoJob.update({
         where: { id: job.id },
         data: { trainingId: training.trainingId, costUsd: training.costUsd, status: 'GENERATING' },

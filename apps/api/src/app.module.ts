@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './config/env';
 import { PrismaModule } from './prisma/prisma.module';
 import { EventsModule } from './common/events/events.module';
+import { StorageModule } from './storage/storage.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PromptsModule } from './prompts/prompts.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
@@ -16,6 +18,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     PrismaModule,
     EventsModule,
+    StorageModule,
+    NotificationsModule,
     PromptsModule,
     OrdersModule,
     SubmissionsModule,
