@@ -99,7 +99,7 @@ function PricingCard(props: {
       <p className="mt-2 text-3xl font-bold">${props.price.toFixed(2)}</p>
       {props.perk && <p className="mt-3 text-sm text-slate-600">{props.perk}</p>}
       <Link
-        to={`/checkout?tier=${props.tier}`}
+        to={`/start?tier=${props.tier}`}
         className="mt-6 rounded-full bg-slate-900 px-6 py-2 text-center font-medium text-white"
       >
         {props.cta}

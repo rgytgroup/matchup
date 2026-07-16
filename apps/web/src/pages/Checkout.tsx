@@ -1,36 +1,48 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { isTierId, TIERS } from '@matchup/shared';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { Layout } from '../components/Layout';
+import { createCheckout } from '../api';
 
-/** Redirige a Stripe Checkout con el tier elegido (SPEC §4.3). */
+/** Redirige a Stripe Checkout para la orden creada en el intake (SPEC §4.3). */
 export function Checkout() {
   const t = useI18n();
   const [params] = useSearchParams();
+  const orderId = params.get('orderId');
   const [loading, setLoading] = useState(false);
-
-  const tierParam = params.get('tier') ?? 'AUDIT';
-  const tier = isTierId(tierParam) ? TIERS[tierParam] : TIERS.AUDIT;
+  const [error, setError] = useState<string | null>(null);
 
   async function goToStripe() {
+    if (!orderId) return;
     setLoading(true);
-    // TODO(checkout): POST /checkout {email, tier} y redirigir a session.url.
-    setLoading(false);
-    alert('Integración de Stripe Checkout pendiente (SPEC §4.3).');
+    setError(null);
+    try {
+      const { url } = await createCheckout(orderId);
+      window.location.href = url;
+    } catch (err) {
+      setError((err as Error).message);
+      setLoading(false);
+    }
+  }
+
+  if (!orderId) {
+    return (
+      <Layout>
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <p className="text-slate-600">No hay una orden en curso.</p>
+          <Link to="/start" className="mt-4 inline-block font-medium underline">
+            {t.landing.heroCta}
+          </Link>
+        </div>
+      </Layout>
+    );
   }
 
   return (
     <Layout>
       <div className="mx-auto max-w-md px-4 py-16 text-center">
         <h1 className="text-2xl font-bold">Checkout</h1>
-        <div className="mt-6 rounded-2xl border border-slate-200 p-6">
-          <p className="text-sm text-slate-500">{tier.id}</p>
-          <p className="mt-2 text-3xl font-bold">${tier.priceUsd.toFixed(2)}</p>
-          {tier.includesPhotos && (
-            <p className="mt-2 text-sm text-slate-600">{t.pricing.photosPerk}</p>
-          )}
-        </div>
+        <p className="mt-4 text-slate-600">You're one step away from your report.</p>
         <button
           onClick={goToStripe}
           disabled={loading}
@@ -38,6 +50,7 @@ export function Checkout() {
         >
           {loading ? t.common.loading : 'Pay with Stripe'}
         </button>
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
         <p className="mt-4 text-xs text-slate-500">{t.landing.noSubscriptions}</p>
       </div>
     </Layout>
