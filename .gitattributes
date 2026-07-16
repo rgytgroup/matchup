@@ -1,0 +1,10 @@
+# Normaliza saltos de línea a LF en el repo (evita ruido CRLF↔LF entre Windows/macOS/Linux).
+* text=auto eol=lf
+
+# Binarios: no tocar.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.pdf binary
+*.ico binary
