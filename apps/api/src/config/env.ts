@@ -11,7 +11,7 @@ export const envSchema = z.object({
   SUPABASE_URL: z.string().default(''),
   SUPABASE_SERVICE_KEY: z.string().default(''),
   GEMINI_API_KEY: z.string().default(''),
-  GEMINI_MODEL: z.string().default('gemini-1.5-pro'),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
   REPLICATE_API_TOKEN: z.string().default(''),
   REPLICATE_TRAINING_MODEL: z.string().default(''),
   REPLICATE_BASE_MODEL: z.string().default(''),

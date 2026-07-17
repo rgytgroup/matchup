@@ -12,10 +12,13 @@ import { AnalysisModule } from './modules/analysis/analysis.module';
 import { PhotosModule } from './modules/photos/photos.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { DevModule } from './modules/dev/dev.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    // Endpoints de desarrollo: solo fuera de producción.
+    ...(process.env.NODE_ENV === 'production' ? [] : [DevModule]),
     PrismaModule,
     EventsModule,
     StorageModule,

@@ -15,7 +15,7 @@ export class GeminiAnalysisProvider implements AnalysisProvider {
   private getModel() {
     const key = this.config.get<string>('GEMINI_API_KEY');
     if (!key) throw new Error('GEMINI_API_KEY no configurada');
-    const model = this.config.get<string>('GEMINI_MODEL') ?? 'gemini-1.5-pro';
+    const model = this.config.get<string>('GEMINI_MODEL') ?? 'gemini-2.5-flash';
     return new GoogleGenerativeAI(key).getGenerativeModel({
       model,
       generationConfig: { responseMimeType: 'application/json' },

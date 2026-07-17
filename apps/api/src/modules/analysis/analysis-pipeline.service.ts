@@ -72,11 +72,16 @@ export class AnalysisPipelineService {
       await this.reports.setPdfUrl(report.id, pdfPath);
 
       await this.submissions.setStatus(submission.id, 'DONE');
-
-      const reportUrl = `${this.config.get<string>('APP_BASE_URL')}/report/${report.publicSlug}`;
-      await this.email.sendReportReady(order.user.email, reportUrl);
-
       await this.events.record('analysis.done', { orderId, submissionId: submission.id });
+
+      // El email es best-effort: si falla (p. ej. Resend no configurado), el reporte
+      // ya quedó listo y accesible por slug; no marcamos el análisis como fallido.
+      try {
+        const reportUrl = `${this.config.get<string>('APP_BASE_URL')}/report/${report.publicSlug}`;
+        await this.email.sendReportReady(order.user.email, reportUrl);
+      } catch (mailErr) {
+        this.logger.warn(`No se pudo enviar el email (¿RESEND_API_KEY?): ${(mailErr as Error).message}`);
+      }
     } catch (err) {
       await this.submissions.setStatus(submission.id, 'FAILED');
       await this.events.record('analysis.failed', { orderId, error: (err as Error).message });
