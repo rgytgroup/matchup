@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 
 export interface UploadableFile {
   buffer: Buffer;
@@ -23,6 +24,11 @@ export class StorageService {
     const url = this.config.get<string>('SUPABASE_URL');
     const key = this.config.get<string>('SUPABASE_SERVICE_KEY');
     if (!url || !key) throw new Error('SUPABASE_URL / SUPABASE_SERVICE_KEY no configuradas');
+    // No usamos Realtime, pero supabase-js lo inicializa y su factory exige un
+    // WebSocket global (Node 20 no lo trae nativo). Le damos el de "ws".
+    const g = globalThis as { WebSocket?: unknown };
+    if (!g.WebSocket) g.WebSocket = WebSocket;
+
     this.client = createClient(url, key, { auth: { persistSession: false } });
     return this.client;
   }
