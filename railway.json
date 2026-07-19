@@ -1,0 +1,13 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install --include=dev && npm run build -w @matchup/shared && npm run build -w @matchup/api"
+  },
+  "deploy": {
+    "startCommand": "node apps/api/dist/main.js",
+    "healthcheckPath": "/health",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  }
+}
