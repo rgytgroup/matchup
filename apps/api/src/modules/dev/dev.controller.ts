@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AnalysisPipelineService } from '../analysis/analysis-pipeline.service';
 import { PhotosService } from '../photos/photos.service';
@@ -27,6 +27,14 @@ export class DevController {
   startPhotos(@Param('orderId') orderId: string) {
     void this.photos.startJob(orderId).catch(() => undefined);
     return { triggered: true, orderId };
+  }
+
+  /** Reanuda solo la generación + QC con un modelo ya entrenado (sin re-entrenar). */
+  @Post('generate/:orderId')
+  startGeneration(@Param('orderId') orderId: string, @Query('version') version?: string) {
+    if (!version) throw new BadRequestException('falta ?version=owner/name:hash del modelo entrenado');
+    void this.photos.resumeGeneration(orderId, version).catch(() => undefined);
+    return { triggered: true, orderId, version };
   }
 
   /** Estado del job de fotos, para monitorear el entrenamiento/generación. */

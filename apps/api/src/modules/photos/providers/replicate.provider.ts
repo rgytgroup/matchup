@@ -57,10 +57,26 @@ export class ReplicatePhotoProvider implements PhotoProvider {
   }
 
   async generate(modelVersion: string, prompt: string): Promise<string[]> {
-    const output = await this.getClient().run(modelVersion as `${string}/${string}:${string}`, {
-      input: { prompt, num_outputs: 1, output_format: 'jpg', aspect_ratio: '1:1' },
-    });
+    const output = await this.withRetryOn429(() =>
+      this.getClient().run(modelVersion as `${string}/${string}:${string}`, {
+        input: { prompt, num_outputs: 1, output_format: 'jpg', aspect_ratio: '1:1' },
+      }),
+    );
     return this.extractUrls(output);
+  }
+
+  /** Reintenta ante 429 (rate limit de Replicate, típico con poco crédito). */
+  private async withRetryOn429<T>(fn: () => Promise<T>, retries = 6): Promise<T> {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await fn();
+      } catch (err) {
+        const msg = (err as Error).message ?? '';
+        const throttled = msg.includes('429') || /throttl/i.test(msg);
+        if (!throttled || attempt >= retries) throw err;
+        await new Promise((r) => setTimeout(r, 4000 * (attempt + 1)));
+      }
+    }
   }
 
   private parseRef(ref: string): { owner: string; name: string; version: string } {

@@ -12,6 +12,7 @@ const TARGET_PHOTOS = 30; // cuántas entregar (SPEC §1)
 const MIN_ACCEPTABLE = 20; // por debajo de esto, regenerar/alertar (SPEC §6.4)
 const POLL_INTERVAL_MS = 15_000;
 const MAX_POLLS = 160; // ~40 min
+const GEN_SPACING_MS = 2_000; // pausa entre generaciones (gentil con el rate limit)
 
 /** Pipeline de fotos del tier premium (SPEC §6). */
 @Injectable()
@@ -27,6 +28,7 @@ export class PhotosService {
     private readonly events: EventsService,
   ) {}
 
+  /** Pipeline completo: zip → entrenar → esperar → generar → QC. */
   async startJob(orderId: string): Promise<void> {
     const submission = await this.prisma.submission.findUnique({ where: { orderId } });
     if (!submission) {
@@ -40,37 +42,67 @@ export class PhotosService {
       create: { orderId, provider: 'replicate', status: 'TRAINING', outputUrls: [], acceptedUrls: [] },
     });
 
+    let modelVersion: string;
     try {
       const signed = await this.storage.signUrls(submission.photoUrls, 3600);
-
-      // 1. Empaquetar las fotos en un .zip y subirlo (los trainers piden un zip).
       const zipBuffer = await this.buildZip(signed);
       const zipPath = `training/${orderId}.zip`;
       await this.storage.uploadBytes(zipPath, zipBuffer, 'application/zip');
       const [zipUrl] = await this.storage.signUrls([zipPath], 3600);
 
-      // 2. Entrenar el LoRA.
       const { trainingId } = await this.provider.train(zipUrl);
       await this.prisma.photoJob.update({ where: { id: job.id }, data: { trainingId } });
       await this.events.record('photos.training_started', { orderId, trainingId });
 
-      // 3. Esperar a que termine el entrenamiento (asíncrono, minutos).
-      const modelVersion = await this.waitForTraining(trainingId);
-      await this.prisma.photoJob.update({ where: { id: job.id }, data: { status: 'GENERATING' } });
+      modelVersion = await this.waitForTraining(trainingId);
+    } catch (err) {
+      await this.failJob(job.id, orderId, err, 'entrenamiento');
+      return;
+    }
 
-      // 4. Generar imágenes por escenario (plantillas de /prompts/photo-scenarios.md).
+    await this.runGeneration(orderId, job.id, modelVersion);
+  }
+
+  /**
+   * Reanuda solo la generación + QC con un modelo YA entrenado (sin re-entrenar).
+   * Útil cuando el entrenamiento salió bien pero la generación falló (p. ej. rate limit).
+   */
+  async resumeGeneration(orderId: string, modelVersion: string): Promise<void> {
+    const job = await this.prisma.photoJob.upsert({
+      where: { orderId },
+      update: { status: 'GENERATING' },
+      create: {
+        orderId,
+        provider: 'replicate',
+        status: 'GENERATING',
+        outputUrls: [],
+        acceptedUrls: [],
+      },
+    });
+    await this.runGeneration(orderId, job.id, modelVersion);
+  }
+
+  private async runGeneration(orderId: string, jobId: string, modelVersion: string): Promise<void> {
+    try {
+      const submission = await this.prisma.submission.findUnique({ where: { orderId } });
+      if (!submission) throw new Error(`sin submission para ${orderId}`);
+      const signed = await this.storage.signUrls(submission.photoUrls, 3600);
+
+      await this.prisma.photoJob.update({ where: { id: jobId }, data: { status: 'GENERATING' } });
+
       const scenarios = this.parseScenarios(this.prompts.load('photo-scenarios'));
       const outputs: string[] = [];
       for (const prompt of scenarios) {
         const urls = await this.provider.generate(modelVersion, prompt);
         outputs.push(...urls);
+        await this.sleep(GEN_SPACING_MS);
       }
       await this.prisma.photoJob.update({
-        where: { id: job.id },
+        where: { id: jobId },
         data: { outputUrls: outputs, status: 'QC' },
       });
 
-      // 5. QC de parecido facial vs la primera foto original; quedarse con las mejores.
+      // QC de parecido facial vs la primera foto original; quedarse con las mejores.
       const reference = signed[0];
       const accepted: string[] = [];
       for (const url of outputs) {
@@ -80,7 +112,7 @@ export class PhotosService {
       const finalAccepted = accepted.slice(0, TARGET_PHOTOS);
 
       await this.prisma.photoJob.update({
-        where: { id: job.id },
+        where: { id: jobId },
         data: { acceptedUrls: finalAccepted, status: 'DONE' },
       });
       await this.events.record('photos.done', {
@@ -90,18 +122,19 @@ export class PhotosService {
       });
 
       if (finalAccepted.length < MIN_ACCEPTABLE) {
-        // TODO(SPEC §6.4): regenerar una tanda; si sigue mal, alertar al admin para revisión manual.
-        await this.events.record('photos.low_quality', {
-          orderId,
-          accepted: finalAccepted.length,
-        });
+        // TODO(SPEC §6.4): regenerar una tanda; si sigue mal, alertar al admin.
+        await this.events.record('photos.low_quality', { orderId, accepted: finalAccepted.length });
         this.logger.warn(`PhotoJob ${orderId}: solo ${finalAccepted.length} fotos aceptables (<${MIN_ACCEPTABLE}).`);
       }
     } catch (err) {
-      await this.prisma.photoJob.update({ where: { id: job.id }, data: { status: 'FAILED' } });
-      await this.events.record('photos.failed', { orderId, error: (err as Error).message });
-      this.logger.error(`PhotoJob FAILED (orden ${orderId}): ${(err as Error).message}`);
+      await this.failJob(jobId, orderId, err, 'generación');
     }
+  }
+
+  private async failJob(jobId: string, orderId: string, err: unknown, fase: string): Promise<void> {
+    await this.prisma.photoJob.update({ where: { id: jobId }, data: { status: 'FAILED' } });
+    await this.events.record('photos.failed', { orderId, fase, error: (err as Error).message });
+    this.logger.error(`PhotoJob FAILED en ${fase} (orden ${orderId}): ${(err as Error).message}`);
   }
 
   private async waitForTraining(trainingId: string): Promise<string> {
