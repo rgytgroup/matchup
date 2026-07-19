@@ -111,20 +111,34 @@ export class PhotosService {
       }
       const finalAccepted = accepted.slice(0, TARGET_PHOTOS);
 
+      // Persistir en Supabase: las URLs de Replicate son temporales (~1h).
+      const persisted: string[] = [];
+      for (let i = 0; i < finalAccepted.length; i += 1) {
+        try {
+          const path = await this.storage.uploadFromUrl(
+            `orders/${orderId}/generated/${i}.jpg`,
+            finalAccepted[i],
+          );
+          persisted.push(path);
+        } catch (e) {
+          this.logger.warn(`No se pudo persistir la foto ${i} (${orderId}): ${(e as Error).message}`);
+        }
+      }
+
       await this.prisma.photoJob.update({
         where: { id: jobId },
-        data: { acceptedUrls: finalAccepted, status: 'DONE' },
+        data: { acceptedUrls: persisted, status: 'DONE' },
       });
       await this.events.record('photos.done', {
         orderId,
         generated: outputs.length,
-        accepted: finalAccepted.length,
+        accepted: persisted.length,
       });
 
-      if (finalAccepted.length < MIN_ACCEPTABLE) {
+      if (persisted.length < MIN_ACCEPTABLE) {
         // TODO(SPEC §6.4): regenerar una tanda; si sigue mal, alertar al admin.
-        await this.events.record('photos.low_quality', { orderId, accepted: finalAccepted.length });
-        this.logger.warn(`PhotoJob ${orderId}: solo ${finalAccepted.length} fotos aceptables (<${MIN_ACCEPTABLE}).`);
+        await this.events.record('photos.low_quality', { orderId, accepted: persisted.length });
+        this.logger.warn(`PhotoJob ${orderId}: solo ${persisted.length} fotos aceptables (<${MIN_ACCEPTABLE}).`);
       }
     } catch (err) {
       await this.failJob(jobId, orderId, err, 'generación');

@@ -36,6 +36,7 @@ export async function getReport(slug: string): Promise<{
   slug: string;
   result: ReportResult;
   pdfUrl: string | null;
+  photos: string[];
   createdAt: string;
 }> {
   return parse(await fetch(`${API_URL}/report/${slug}`));

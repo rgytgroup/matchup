@@ -9,13 +9,17 @@ import { getReport } from '../api';
 export function Report() {
   const { slug } = useParams();
   const t = useI18n();
-  const [data, setData] = useState<{ result: ReportResult; pdfUrl: string | null } | null>(null);
+  const [data, setData] = useState<{
+    result: ReportResult;
+    pdfUrl: string | null;
+    photos: string[];
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) return;
     getReport(slug)
-      .then((r) => setData({ result: r.result, pdfUrl: r.pdfUrl }))
+      .then((r) => setData({ result: r.result, pdfUrl: r.pdfUrl, photos: r.photos }))
       .catch((e) => setError((e as Error).message));
   }, [slug]);
 
@@ -111,6 +115,23 @@ export function Report() {
             ))}
           </ol>
         </Card>
+
+        {data.photos.length > 0 && (
+          <Card title={t.report.aiPhotos}>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {data.photos.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noreferrer" download>
+                  <img
+                    src={url}
+                    alt={`AI photo ${i + 1}`}
+                    className="aspect-square w-full rounded-xl object-cover"
+                    loading="lazy"
+                  />
+                </a>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
     </Layout>
   );

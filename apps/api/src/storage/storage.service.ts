@@ -60,6 +60,15 @@ export class StorageService {
     return this.uploadBytes(path, buffer, 'application/pdf');
   }
 
+  /** Descarga desde una URL (p. ej. una foto temporal de Replicate) y la persiste en el bucket. */
+  async uploadFromUrl(path: string, url: string): Promise<string> {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`No se pudo descargar ${url} (HTTP ${res.status})`);
+    const contentType = res.headers.get('content-type') ?? 'image/jpeg';
+    const buffer = Buffer.from(await res.arrayBuffer());
+    return this.uploadBytes(path, buffer, contentType);
+  }
+
   /** Sube un buffer arbitrario (p. ej. el .zip de entrenamiento) y devuelve su ruta. */
   async uploadBytes(path: string, buffer: Buffer, contentType: string): Promise<string> {
     const { error } = await this.getClient().storage.from(this.bucket).upload(path, buffer, {
