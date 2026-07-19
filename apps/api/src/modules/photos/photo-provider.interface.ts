@@ -4,19 +4,26 @@
  */
 export const PHOTO_PROVIDER = Symbol('PHOTO_PROVIDER');
 
-export interface TrainingResult {
+/** Palabra clave del sujeto entrenado; se inserta en los prompts de generación. */
+export const TRIGGER_WORD = 'TOK';
+
+export type TrainingStatus = 'starting' | 'processing' | 'succeeded' | 'failed' | 'canceled';
+
+export interface TrainingHandle {
   trainingId: string;
-  costUsd?: number;
 }
 
-export interface GenerationResult {
-  imageUrls: string[];
-  costUsd?: number;
+export interface TrainingResult {
+  status: TrainingStatus;
+  /** Versión del modelo entrenado (owner/name:hash), presente cuando status = succeeded. */
+  modelVersion?: string;
 }
 
 export interface PhotoProvider {
-  /** Entrena un LoRA con las fotos del usuario. */
-  train(photoUrls: string[]): Promise<TrainingResult>;
-  /** Genera imágenes a partir del modelo entrenado y una lista de prompts. */
-  generate(trainingId: string, prompts: string[]): Promise<GenerationResult>;
+  /** Lanza el entrenamiento LoRA a partir de un .zip de fotos (URL accesible). */
+  train(zipUrl: string): Promise<TrainingHandle>;
+  /** Consulta el estado del entrenamiento (para polling). */
+  getTrainingStatus(trainingId: string): Promise<TrainingResult>;
+  /** Genera imágenes con el modelo entrenado y un prompt. Devuelve URLs. */
+  generate(modelVersion: string, prompt: string): Promise<string[]>;
 }

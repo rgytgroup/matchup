@@ -1,17 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Replicate from 'replicate';
-import type {
-  GenerationResult,
-  PhotoProvider,
-  TrainingResult,
+import {
+  TRIGGER_WORD,
+  type PhotoProvider,
+  type TrainingHandle,
+  type TrainingResult,
+  type TrainingStatus,
 } from '../photo-provider.interface';
 
 /**
  * Proveedor de fotos con Replicate (entrenamiento LoRA + generación, SPEC §6).
- * Los IDs de modelo son configurables por env para poder cambiar de trainer/base
- * sin tocar código. NOTA: el schema exacto de `input` depende del trainer elegido
- * (muchos LoRA trainers esperan `input_images` como URL de un .zip) — ajústalo al tuyo.
+ * Modelos configurables por env. El entrenador por defecto asumido es del estilo
+ * "ostris/flux-dev-lora-trainer": recibe `input_images` (URL de un .zip),
+ * `trigger_word` y `steps`, y publica el LoRA en el modelo destino; su output
+ * incluye `version` (owner/name:hash) que luego se corre para generar.
  */
 @Injectable()
 export class ReplicatePhotoProvider implements PhotoProvider {
@@ -23,32 +26,41 @@ export class ReplicatePhotoProvider implements PhotoProvider {
     return new Replicate({ auth });
   }
 
-  async train(photoUrls: string[]): Promise<TrainingResult> {
+  async train(zipUrl: string): Promise<TrainingHandle> {
     const ref = this.config.get<string>('REPLICATE_TRAINING_MODEL');
+    const destination = this.config.get<string>('REPLICATE_DESTINATION_MODEL');
     if (!ref) throw new Error('REPLICATE_TRAINING_MODEL no configurada');
+    if (!destination) throw new Error('REPLICATE_DESTINATION_MODEL no configurada');
+
     const { owner, name, version } = this.parseRef(ref);
-    const destination = (this.config.get<string>('REPLICATE_BASE_MODEL') ||
-      `${owner}/${name}-out`) as `${string}/${string}`;
+    const steps = this.config.get<number>('REPLICATE_TRAINING_STEPS') ?? 1000;
 
     const training = await this.getClient().trainings.create(owner, name, version, {
-      destination,
-      input: { input_images: photoUrls },
+      destination: destination as `${string}/${string}`,
+      input: {
+        input_images: zipUrl,
+        trigger_word: TRIGGER_WORD,
+        steps,
+      },
     });
     return { trainingId: training.id };
   }
 
-  async generate(trainingId: string, prompts: string[]): Promise<GenerationResult> {
-    const baseModel = this.config.get<string>('REPLICATE_BASE_MODEL');
-    if (!baseModel) throw new Error('REPLICATE_BASE_MODEL no configurada');
+  async getTrainingStatus(trainingId: string): Promise<TrainingResult> {
+    const t = await this.getClient().trainings.get(trainingId);
+    const status = t.status as TrainingStatus;
+    const output = t.output as { version?: string } | null | undefined;
+    return {
+      status,
+      modelVersion: status === 'succeeded' ? output?.version : undefined,
+    };
+  }
 
-    const imageUrls: string[] = [];
-    for (const prompt of prompts) {
-      const output = await this.getClient().run(baseModel as `${string}/${string}`, {
-        input: { prompt, lora: trainingId },
-      });
-      imageUrls.push(...this.extractUrls(output));
-    }
-    return { imageUrls };
+  async generate(modelVersion: string, prompt: string): Promise<string[]> {
+    const output = await this.getClient().run(modelVersion as `${string}/${string}:${string}`, {
+      input: { prompt, num_outputs: 1, output_format: 'jpg', aspect_ratio: '1:1' },
+    });
+    return this.extractUrls(output);
   }
 
   private parseRef(ref: string): { owner: string; name: string; version: string } {

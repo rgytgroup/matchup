@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { z } from 'zod';
 import { REPORT_TARGETS, reportResultSchema, type ReportResult } from '@matchup/shared';
 import { PromptLoaderService } from '../../prompts/prompt-loader.service';
 import { ANALYSIS_PROVIDER, type AnalysisProvider } from './analysis-provider.interface';
@@ -71,6 +72,20 @@ export class AnalysisService {
     }
 
     throw new AnalysisValidationError(lastError);
+  }
+
+  /** QC de parecido facial (SPEC §6.3): 0-100 de qué tan parecida es la candidata a la referencia. */
+  async scoreSimilarity(referenceUrl: string, candidateUrl: string): Promise<number> {
+    const prompt = this.prompts.load('photo-qc');
+    const raw = await this.provider.generateReportJson(prompt, [referenceUrl, candidateUrl]);
+    try {
+      const parsed = z
+        .object({ similarity: z.number().min(0).max(100) })
+        .safeParse(this.parseJson(raw));
+      return parsed.success ? parsed.data.similarity : 0;
+    } catch {
+      return 0;
+    }
   }
 
   private withFeedback(basePrompt: string, error: string): string {

@@ -57,11 +57,16 @@ export class StorageService {
 
   /** Sube el PDF del reporte y devuelve su ruta. */
   async uploadPdf(path: string, buffer: Buffer): Promise<string> {
+    return this.uploadBytes(path, buffer, 'application/pdf');
+  }
+
+  /** Sube un buffer arbitrario (p. ej. el .zip de entrenamiento) y devuelve su ruta. */
+  async uploadBytes(path: string, buffer: Buffer, contentType: string): Promise<string> {
     const { error } = await this.getClient().storage.from(this.bucket).upload(path, buffer, {
-      contentType: 'application/pdf',
+      contentType,
       upsert: true,
     });
-    if (error) throw new Error(`Fallo subiendo PDF ${path}: ${error.message}`);
+    if (error) throw new Error(`Fallo subiendo ${path}: ${error.message}`);
     return path;
   }
 

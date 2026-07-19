@@ -13,8 +13,11 @@ export const envSchema = z.object({
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
   REPLICATE_API_TOKEN: z.string().default(''),
+  // Entrenador LoRA, ej. "ostris/flux-dev-lora-trainer:<version>".
   REPLICATE_TRAINING_MODEL: z.string().default(''),
-  REPLICATE_BASE_MODEL: z.string().default(''),
+  // Modelo destino propio donde se guarda el LoRA entrenado, ej. "usuario/matchup-loras".
+  REPLICATE_DESTINATION_MODEL: z.string().default(''),
+  REPLICATE_TRAINING_STEPS: z.coerce.number().default(1000),
   STRIPE_SECRET_KEY: z.string().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
   RESEND_API_KEY: z.string().default(''),
