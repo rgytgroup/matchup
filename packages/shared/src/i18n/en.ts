@@ -27,15 +27,22 @@ export const en = {
   pricing: {
     title: 'Simple, one-time pricing',
     audit: 'Profile Audit',
+    auditDesc:
+      'We analyze the photos and bio you use today and give you scores, a diagnosis, 3 rewritten bios, prompt ideas, and a 5-step action plan.',
     auditPlus: 'Audit + AI Photos',
-    photosPerk: '30 AI-generated photos from your own pictures',
+    auditPlusDesc:
+      'Everything in the Audit — plus 30 brand-new AI photos of you, generated from the pictures you upload.',
+    photosPerk: '+ 30 AI-generated photos of you',
     cta: 'Choose',
   },
   start: {
     title: 'Tell us about your profile',
     questionnaire: 'A few quick questions',
-    uploadPhotos: 'Upload 3–8 photos',
-    uploadHint: 'JPG, PNG or WEBP · up to 10 MB each',
+    uploadPhotos: 'Upload your current profile photos (3–8)',
+    uploadHint:
+      'These are the photos you use on your dating apps today — we analyze each one. JPG, PNG or WEBP · up to 10 MB each.',
+    photosNote:
+      'Both plans analyze the photos you upload. The premium plan also generates 30 new AI photos of you from them.',
     bioLabel: 'Paste your current bio and prompts',
     submit: 'Continue to checkout',
   },

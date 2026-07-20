@@ -83,6 +83,7 @@ export function Start() {
               </button>
             ))}
           </div>
+          <p className="text-sm text-slate-500">{t.start.photosNote}</p>
         </div>
 
         <div className="space-y-1">

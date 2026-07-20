@@ -56,14 +56,15 @@ export function Landing() {
             <PricingCard
               name={t.pricing.audit}
               price={TIERS.AUDIT.priceUsd}
+              desc={t.pricing.auditDesc}
               tier="AUDIT"
               cta={t.pricing.cta}
             />
             <PricingCard
               name={t.pricing.auditPlus}
               price={TIERS.AUDIT_PLUS_PHOTOS.priceUsd}
+              desc={t.pricing.auditPlusDesc}
               tier="AUDIT_PLUS_PHOTOS"
-              perk={t.pricing.photosPerk}
               cta={t.pricing.cta}
               highlighted
             />
@@ -90,8 +91,8 @@ export function Landing() {
 function PricingCard(props: {
   name: string;
   price: number;
+  desc: string;
   tier: string;
-  perk?: string;
   cta: string;
   highlighted?: boolean;
 }) {
@@ -103,7 +104,7 @@ function PricingCard(props: {
     >
       <h3 className="text-lg font-semibold">{props.name}</h3>
       <p className="mt-2 text-3xl font-bold">${props.price.toFixed(2)}</p>
-      {props.perk && <p className="mt-3 text-sm text-slate-600">{props.perk}</p>}
+      <p className="mt-3 flex-1 text-sm text-slate-600">{props.desc}</p>
       <Link
         to={`/start?tier=${props.tier}`}
         className="mt-6 rounded-full bg-slate-900 px-6 py-2 text-center font-medium text-white"
