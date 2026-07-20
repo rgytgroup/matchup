@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { TIERS } from '@matchup/shared';
 import { useI18n } from '../i18n';
@@ -62,10 +62,16 @@ export function Landing() {
           </div>
 
           <figure className="mk-glass" aria-label="A dating profile with a coaching score">
-            <div className="media">
+            <div
+              className="media"
+              style={{
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,.5), rgba(0,0,0,0) 45%), url('/persona/hero.jpg') center 22% / cover",
+              }}
+            >
               <span className="chip keep">keep ✓</span>
               <span className="chip swap">swap</span>
-              <span className="name">David, 36</span>
+              <span className="name">Mateo, 34</span>
               <div className="mk-ringwrap">
                 <svg viewBox="0 0 96 96" aria-hidden="true">
                   <circle className="track2" cx="48" cy="48" r="42" />
@@ -172,19 +178,20 @@ export function Landing() {
             <p>{t.landing.photosIntro}</p>
           </div>
           <div className="mk-plates">
-            <div className="mk-plate a">
+            <div className="mk-plate" style={plate('golden.jpg')}>
               <span>Golden hour</span>
             </div>
-            <div className="mk-plate b">
+            <div className="mk-plate" style={plate('cafe.jpg')}>
               <span>Warm café</span>
             </div>
-            <div className="mk-plate c">
+            <div className="mk-plate" style={plate('studio.jpg')}>
               <span>Studio</span>
             </div>
-            <div className="mk-plate d">
+            <div className="mk-plate" style={plate('city.jpg')}>
               <span>City evening</span>
             </div>
           </div>
+          <p className="mk-plate-note">Illustrative examples, generated with AI.</p>
           <p className="mk-guard">
             <b>{t.landing.photosGuardLabel}</b>&nbsp;{t.landing.photosGuardText}
           </p>
@@ -306,6 +313,10 @@ export function Landing() {
       </section>
     </Layout>
   );
+}
+
+function plate(file: string): CSSProperties {
+  return { background: `url('/persona/${file}') center / cover` };
 }
 
 function Bar({ label, value, good }: { label: string; value: number; good?: boolean }) {
