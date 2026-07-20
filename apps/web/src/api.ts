@@ -2,6 +2,15 @@ import type { ReportResult } from '@matchup/shared';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+/** Registra un evento de conversión (fire-and-forget, no bloquea la UI). */
+export function track(type: string): void {
+  void fetch(`${API_URL}/track`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type }),
+  }).catch(() => undefined);
+}
+
 async function parse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { message?: string };

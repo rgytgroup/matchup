@@ -2,61 +2,96 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import type { ReportResult } from '@matchup/shared';
 
+const INK = '#0f172a';
+const MUTED = '#475569';
+const LIGHT = '#64748b';
+const MARGIN = 50;
+
 /**
- * Genera el PDF del reporte server-side (SPEC §5.4).
- * Renderiza el mismo contenido que el reporte web a partir del resultado validado.
+ * Genera el PDF del reporte server-side (SPEC §5.4), con estilo de marca cercano
+ * al reporte web (header, colores, secciones). Nota: para un PDF pixel-idéntico al
+ * HTML haría falta un navegador headless (puppeteer); esto es una versión fiel y ligera.
  */
 @Injectable()
 export class ReportPdfService {
   render(result: ReportResult): Promise<Buffer> {
     return new Promise<Buffer>((resolve, reject) => {
-      const doc = new PDFDocument({ margin: 50 });
+      const doc = new PDFDocument({ size: 'A4', margin: MARGIN });
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      doc.fontSize(22).text('MatchUp — Profile Audit', { align: 'left' });
-      doc.moveDown(0.5);
-      doc.fontSize(16).text(`Overall score: ${result.overallScore}/100`);
-      doc.moveDown();
+      // Header de marca.
+      doc.rect(0, 0, doc.page.width, 92).fill(INK);
+      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(26).text('MatchUp', MARGIN, 30);
+      doc
+        .font('Helvetica')
+        .fontSize(11)
+        .fillColor('#cbd5e1')
+        .text('Honest AI dating profile audit', MARGIN, 62);
+
+      // Cuerpo.
+      doc.fillColor(INK);
+      doc.x = MARGIN;
+      doc.y = 120;
+
+      doc.font('Helvetica').fontSize(10).fillColor(LIGHT).text('OVERALL SCORE');
+      doc.font('Helvetica-Bold').fontSize(38).fillColor(INK).text(`${result.overallScore} / 100`);
 
       this.section(doc, 'Photo-by-photo');
       result.photos.forEach((p) => {
         doc
-          .fontSize(12)
-          .text(`Photo ${p.index + 1}: ${p.score}/100 — ${p.keep ? 'Keep' : 'Consider dropping'}`);
-        if (p.issues.length) doc.fontSize(10).text(`Issues: ${p.issues.join('; ')}`);
-        if (p.strengths.length) doc.fontSize(10).text(`Strengths: ${p.strengths.join('; ')}`);
-        doc.moveDown(0.3);
+          .font('Helvetica-Bold')
+          .fontSize(11)
+          .fillColor(INK)
+          .text(`Photo ${p.index + 1} — ${p.score}/100`, { continued: true })
+          .font('Helvetica')
+          .fillColor(p.keep ? '#16a34a' : '#d97706')
+          .text(p.keep ? '   ·  Keep' : '   ·  Consider dropping');
+        if (p.issues.length) {
+          doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(`Issues: ${p.issues.join('; ')}`);
+        }
+        if (p.strengths.length) {
+          doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(`Strengths: ${p.strengths.join('; ')}`);
+        }
+        doc.moveDown(0.4);
       });
 
       if (result.missingArchetypes.length) {
         this.section(doc, 'Missing photo types');
-        doc.fontSize(11).list(result.missingArchetypes);
+        doc.font('Helvetica').fontSize(11).fillColor('#334155').list(result.missingArchetypes);
       }
 
       this.section(doc, 'Bio diagnosis');
-      doc.fontSize(11).text(result.bioDiagnosis);
+      doc.font('Helvetica').fontSize(11).fillColor('#334155').text(result.bioDiagnosis);
 
       this.section(doc, 'Rewritten bios');
-      result.rewrittenBios.forEach((b, i) => doc.fontSize(11).text(`${i + 1}. ${b}`).moveDown(0.2));
+      result.rewrittenBios.forEach((b, i) =>
+        doc.font('Helvetica').fontSize(11).fillColor('#334155').text(`${i + 1}. ${b}`).moveDown(0.2),
+      );
 
       if (result.suggestedPrompts.length) {
         this.section(doc, 'Suggested prompts');
-        result.suggestedPrompts.forEach((p) =>
-          doc.fontSize(11).text(`${p.prompt}`).fontSize(10).text(p.answer).moveDown(0.2),
-        );
+        result.suggestedPrompts.forEach((p) => {
+          doc.font('Helvetica-Bold').fontSize(11).fillColor(INK).text(p.prompt);
+          doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(p.answer).moveDown(0.2);
+        });
       }
 
-      this.section(doc, 'Action plan');
-      doc.fontSize(11).list(result.actionPlan);
+      this.section(doc, 'Your action plan');
+      doc.font('Helvetica').fontSize(11).fillColor('#334155').list(result.actionPlan);
 
       doc.end();
     });
   }
 
   private section(doc: PDFKit.PDFDocument, title: string): void {
-    doc.moveDown().fontSize(14).fillColor('#111').text(title).moveDown(0.3).fillColor('#333');
+    doc.moveDown(0.9);
+    const y = doc.y;
+    doc.rect(MARGIN, y + 2, 4, 14).fill(INK); // barra de acento
+    doc.font('Helvetica-Bold').fontSize(14).fillColor(INK).text(title, MARGIN + 12, y);
+    doc.moveDown(0.4);
+    doc.x = MARGIN;
   }
 }

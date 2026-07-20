@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { Layout } from '../components/Layout';
-import { createCheckout } from '../api';
+import { createCheckout, track } from '../api';
 
 /** Redirige a Stripe Checkout para la orden creada en el intake (SPEC §4.3). */
 export function Checkout() {
@@ -11,6 +11,10 @@ export function Checkout() {
   const orderId = params.get('orderId');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    track('checkout.viewed');
+  }, []);
 
   async function goToStripe() {
     if (!orderId) return;

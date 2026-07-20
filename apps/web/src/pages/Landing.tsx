@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TIERS } from '@matchup/shared';
 import { useI18n } from '../i18n';
 import { Layout } from '../components/Layout';
+import { track } from '../api';
 
 const FAQ: Array<{ q: string; a: string }> = [
   {
@@ -24,6 +26,10 @@ const FAQ: Array<{ q: string; a: string }> = [
 
 export function Landing() {
   const t = useI18n();
+
+  useEffect(() => {
+    track('landing.visit');
+  }, []);
 
   return (
     <Layout>
