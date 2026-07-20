@@ -32,7 +32,7 @@ export class StripeService {
     const base = this.config.get<string>('APP_BASE_URL');
     const tier = TIERS[params.tier];
     const productName =
-      params.tier === 'AUDIT_PLUS_PHOTOS' ? 'MatchUp — Audit + AI Photos' : 'MatchUp — Profile Audit';
+      params.tier === 'AUDIT_PLUS_PHOTOS' ? 'Truly — Audit + AI Photos' : 'Truly — Profile Audit';
 
     return this.getClient().checkout.sessions.create({
       mode: 'payment',

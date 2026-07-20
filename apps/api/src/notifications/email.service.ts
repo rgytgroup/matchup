@@ -19,14 +19,14 @@ export class EmailService {
   }
 
   private get from(): string {
-    return this.config.get<string>('EMAIL_FROM') ?? 'MatchUp <onboarding@resend.dev>';
+    return this.config.get<string>('EMAIL_FROM') ?? 'Truly <onboarding@resend.dev>';
   }
 
   async sendReportReady(to: string, reportUrl: string): Promise<void> {
     await this.getClient().emails.send({
       from: this.from,
       to,
-      subject: 'Your MatchUp report is ready',
+      subject: 'Your Truly report is ready',
       html: `
         <p>Your dating profile audit is ready.</p>
         <p><a href="${reportUrl}">View your report</a></p>
@@ -39,7 +39,7 @@ export class EmailService {
     await this.getClient().emails.send({
       from: this.from,
       to,
-      subject: 'Your MatchUp AI photos are ready',
+      subject: 'Your Truly AI photos are ready',
       html: `
         <p>Your AI-generated photos are ready!</p>
         <p><a href="${reportUrl}">View your photos</a></p>
@@ -51,7 +51,7 @@ export class EmailService {
     await this.getClient().emails.send({
       from: this.from,
       to,
-      subject: 'Your MatchUp refund has been processed',
+      subject: 'Your Truly refund has been processed',
       html: `
         <p>Your refund has been processed and should appear on your statement within a few business days.</p>
         <p>If you have any questions, just reply to this email.</p>

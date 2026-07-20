@@ -20,14 +20,14 @@ export function Terms() {
   return (
     <LegalPage title="Terms of Service">
       <p>
-        MatchUp is a service operated by rgytgroup ("we", "us") that provides an AI-generated audit
+        Truly is a service operated by rgytgroup ("we", "us") that provides an AI-generated audit
         of your dating profile, and, on the premium tier, AI-generated photos based on the pictures
-        you upload. By purchasing or using MatchUp you agree to these Terms.
+        you upload. By purchasing or using Truly you agree to these Terms.
       </p>
 
       <h2>What you get</h2>
       <p>
-        MatchUp is a <strong>one-time purchase</strong>. There are no subscriptions or recurring
+        Truly is a <strong>one-time purchase</strong>. There are no subscriptions or recurring
         charges. You receive a report with scores, a diagnosis, rewritten bios, suggested prompts,
         and an action plan. The premium tier additionally generates AI photos of you.
       </p>
@@ -74,7 +74,7 @@ export function Privacy() {
   return (
     <LegalPage title="Privacy Policy">
       <p>
-        This policy explains what data MatchUp (operated by rgytgroup) collects and how we use it.
+        This policy explains what data Truly (operated by rgytgroup) collects and how we use it.
       </p>
 
       <h2>What we collect</h2>
@@ -120,7 +120,7 @@ export function Refunds() {
   return (
     <LegalPage title="Refund Policy">
       <p>
-        We want you to be happy with your MatchUp audit. If you are not satisfied, you can request a
+        We want you to be happy with your Truly audit. If you are not satisfied, you can request a
         full refund within <strong>7 days</strong> of your purchase.
       </p>
 

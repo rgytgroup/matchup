@@ -24,7 +24,7 @@ export class ReportPdfService {
 
       // Header de marca.
       doc.rect(0, 0, doc.page.width, 92).fill(INK);
-      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(26).text('MatchUp', MARGIN, 30);
+      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(26).text('Truly', MARGIN, 30);
       doc
         .font('Helvetica')
         .fontSize(11)

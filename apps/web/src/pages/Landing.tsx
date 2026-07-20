@@ -8,7 +8,7 @@ import { track } from '../api';
 const FAQ: Array<{ q: string; a: string }> = [
   {
     q: 'Is this a subscription?',
-    a: 'No. MatchUp is a one-time purchase. No recurring charges, ever.',
+    a: 'No. Truly is a one-time purchase. No recurring charges, ever.',
   },
   {
     q: 'What exactly do I get?',

@@ -4,7 +4,7 @@
  */
 export const en = {
   common: {
-    appName: 'MatchUp',
+    appName: 'Truly',
     tagline: 'Honest AI audits for your dating profile.',
     downloadPdf: 'Download PDF',
     loading: 'Loading…',
