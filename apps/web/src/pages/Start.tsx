@@ -61,36 +61,34 @@ export function Start() {
 
   return (
     <Layout>
-      <form onSubmit={onSubmit} className="mx-auto max-w-2xl space-y-8 px-4 py-12">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">{t.start.title}</h1>
-          <p className="text-slate-600">{t.start.subtitle}</p>
+      <form onSubmit={onSubmit} className="mk-form">
+        <div className="mk-form-head">
+          <h1>{t.start.title}</h1>
+          <p>{t.start.subtitle}</p>
         </div>
 
-        <div className="space-y-2">
-          <span className="text-lg font-semibold">Plan</span>
-          <div className="grid gap-3 sm:grid-cols-2">
+        <div className="mk-group">
+          <span className="glabel">Plan</span>
+          <div className="mk-optgrid">
             {(Object.keys(TIERS) as TierId[]).map((id) => (
               <button
                 type="button"
                 key={id}
                 onClick={() => setTier(id)}
-                className={`rounded-xl border p-4 text-left ${
-                  tier === id ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
-                }`}
+                className={`mk-opt${tier === id ? ' sel' : ''}`}
               >
-                <span className="block font-medium">
+                <span className="name">
                   {id === 'AUDIT_PLUS_PHOTOS' ? t.pricing.auditPlus : t.pricing.audit}
                 </span>
-                <span className="text-sm text-slate-500">${TIERS[id].priceUsd.toFixed(2)}</span>
+                <span className="price">${TIERS[id].priceUsd.toFixed(2)}</span>
               </button>
             ))}
           </div>
-          <p className="text-sm text-slate-500">{t.start.photosNote}</p>
+          <p className="mk-hint">{t.start.photosNote}</p>
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+        <div className="mk-group">
+          <label htmlFor="email" className="mk-label">
             Email
           </label>
           <input
@@ -99,34 +97,32 @@ export function Start() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-2"
+            className="mk-input"
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-lg font-semibold">{t.start.uploadScreenshots}</label>
-          <input
-            type="file"
-            multiple
-            accept={ACCEPTED.join(',')}
-            onChange={(e) => onFiles(e.target.files)}
-            className="block w-full text-sm"
-          />
-          <p className="text-sm text-slate-500">{t.start.screenshotHint}</p>
-          {screenshots.length > 0 && (
-            <p className="text-sm text-slate-600">
-              {screenshots.length} {t.start.screenshotsSelected}
-            </p>
-          )}
+        <div className="mk-group">
+          <span className="glabel">{t.start.uploadScreenshots}</span>
+          <div className="mk-dropzone">
+            <input
+              type="file"
+              multiple
+              accept={ACCEPTED.join(',')}
+              onChange={(e) => onFiles(e.target.files)}
+              className="mk-file"
+            />
+            <p className="mk-hint">{t.start.screenshotHint}</p>
+            {screenshots.length > 0 && (
+              <p className="mk-count">
+                {screenshots.length} {t.start.screenshotsSelected}
+              </p>
+            )}
+          </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="mk-error">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-full bg-slate-900 px-8 py-3 font-semibold text-white disabled:opacity-60"
-        >
+        <button type="submit" disabled={submitting} className="mk-btn" style={{ alignSelf: 'flex-start' }}>
           {submitting ? t.common.loading : t.start.submit}
         </button>
       </form>

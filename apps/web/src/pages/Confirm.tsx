@@ -130,10 +130,10 @@ export function Confirm() {
   if (phase === 'loading') {
     return (
       <Layout>
-        <div className="mx-auto max-w-md px-4 py-24 text-center">
-          <div className="mx-auto mb-6 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
-          <p className="text-lg font-semibold">{t.confirm.reading}</p>
-          <p className="mt-2 text-sm text-slate-500">{t.confirm.readingHint}</p>
+        <div className="mk-form mk-center-note">
+          <span className="mk-spin" style={{ width: '2.4rem', height: '2.4rem', borderWidth: '3px' }} />
+          <span className="big">{t.confirm.reading}</span>
+          <p className="mk-hint">{t.confirm.readingHint}</p>
         </div>
       </Layout>
     );
@@ -142,14 +142,11 @@ export function Confirm() {
   if (phase === 'failed') {
     return (
       <Layout>
-        <div className="mx-auto max-w-md px-4 py-20 text-center">
-          <p className="text-slate-700">
+        <div className="mk-form mk-center-note">
+          <p style={{ color: 'var(--ink-soft)', maxWidth: '44ch' }}>
             {failReason === 'third_party' ? t.confirm.failedThirdParty : t.confirm.failedGeneric}
           </p>
-          <Link
-            to="/start"
-            className="mt-6 inline-block rounded-full bg-slate-900 px-6 py-2.5 font-semibold text-white"
-          >
+          <Link to="/start" className="mk-btn">
             {t.confirm.startOver}
           </Link>
         </div>
@@ -159,23 +156,21 @@ export function Confirm() {
 
   return (
     <Layout>
-      <form onSubmit={onSubmit} className="mx-auto max-w-2xl space-y-8 px-4 py-12">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">{t.confirm.title}</h1>
-          <p className="text-slate-600">{t.confirm.subtitle}</p>
+      <form onSubmit={onSubmit} className="mk-form">
+        <div className="mk-form-head">
+          <h1>{t.confirm.title}</h1>
+          <p>{t.confirm.subtitle}</p>
         </div>
 
-        <div className="space-y-2">
-          <span className="text-lg font-semibold">{t.confirm.platformLabel}</span>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mk-group">
+          <span className="glabel">{t.confirm.platformLabel}</span>
+          <div className="mk-optgrid four">
             {PLATFORMS.map((pf) => (
               <button
                 type="button"
                 key={pf}
                 onClick={() => setPlatform(pf)}
-                className={`rounded-xl border p-3 text-center font-medium ${
-                  platform === pf ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
-                }`}
+                className={`mk-opt center${platform === pf ? ' sel' : ''}`}
               >
                 {PLATFORM_LABELS[pf]}
               </button>
@@ -183,8 +178,8 @@ export function Confirm() {
           </div>
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor="bio" className="text-lg font-semibold">
+        <div className="mk-group">
+          <label htmlFor="bio" className="glabel">
             {t.confirm.bioLabel}
           </label>
           <textarea
@@ -192,70 +187,70 @@ export function Confirm() {
             rows={5}
             value={bioText}
             onChange={(e) => setBioText(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-3"
+            className="mk-textarea"
           />
         </div>
 
-        <div className="space-y-3">
-          <span className="text-lg font-semibold">{t.confirm.promptsLabel}</span>
+        <div className="mk-group">
+          <span className="glabel">{t.confirm.promptsLabel}</span>
           {prompts.map((p, i) => (
-            <div key={i} className="space-y-2 rounded-xl border border-slate-200 p-3">
+            <div key={i} className="mk-prompt-edit">
               <input
                 type="text"
                 value={p.prompt}
                 placeholder={t.confirm.promptPlaceholder}
                 onChange={(e) => setPrompt(i, { prompt: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm font-medium"
+                className="mk-input"
+                style={{ fontWeight: 600 }}
               />
               <input
                 type="text"
                 value={p.answer}
                 placeholder={t.confirm.answerPlaceholder}
                 onChange={(e) => setPrompt(i, { answer: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+                className="mk-input"
               />
             </div>
           ))}
           <button
             type="button"
             onClick={() => setPrompts((prev) => [...prev, { prompt: '', answer: '' }])}
-            className="text-sm font-medium text-slate-700 underline"
+            className="mk-link"
+            style={{ alignSelf: 'flex-start' }}
           >
             + {t.confirm.addPrompt}
           </button>
         </div>
 
-        <fieldset className="space-y-4">
-          <legend className="text-lg font-semibold">{t.start.questionnaire}</legend>
+        <div className="mk-group">
+          <span className="glabel">{t.start.questionnaire}</span>
           <TextField label="What's your main goal?" value={q.goal} onChange={(v) => setQ({ ...q, goal: v })} />
           <TextField label="Your age range" value={q.ageRange} onChange={(v) => setQ({ ...q, ageRange: v })} />
           <TextField label="City" value={q.city} onChange={(v) => setQ({ ...q, city: v })} />
-        </fieldset>
-
-        <div className="space-y-2 rounded-xl border-2 border-dashed border-slate-300 p-4">
-          <label className="text-lg font-semibold">{t.confirm.uploadPhotosLabel}</label>
-          <input
-            type="file"
-            multiple
-            accept={UPLOAD_RULES.acceptedMimeTypes.join(',')}
-            onChange={(e) => onFiles(e.target.files)}
-            className="block w-full text-sm"
-          />
-          <p className="text-sm text-slate-500">{t.confirm.uploadPhotosHint}</p>
-          {photos.length > 0 && (
-            <p className="text-sm text-slate-600">
-              {photos.length} {t.confirm.photosSelected}
-            </p>
-          )}
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="mk-group">
+          <span className="glabel">{t.confirm.uploadPhotosLabel}</span>
+          <div className="mk-dropzone">
+            <input
+              type="file"
+              multiple
+              accept={UPLOAD_RULES.acceptedMimeTypes.join(',')}
+              onChange={(e) => onFiles(e.target.files)}
+              className="mk-file"
+            />
+            <p className="mk-hint">{t.confirm.uploadPhotosHint}</p>
+            {photos.length > 0 && (
+              <p className="mk-count">
+                {photos.length} {t.confirm.photosSelected}
+              </p>
+            )}
+          </div>
+        </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-full bg-slate-900 px-8 py-3 font-semibold text-white disabled:opacity-60"
-        >
+        {error && <p className="mk-error">{error}</p>}
+
+        <button type="submit" disabled={submitting} className="mk-btn" style={{ alignSelf: 'flex-start' }}>
           {submitting ? t.common.loading : t.confirm.submit}
         </button>
       </form>
@@ -273,13 +268,13 @@ function TextField({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-slate-700">{label}</label>
+    <div className="mk-group" style={{ gap: '.4rem' }}>
+      <label className="mk-label">{label}</label>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 p-2"
+        className="mk-input"
       />
     </div>
   );

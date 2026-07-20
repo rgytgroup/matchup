@@ -36,28 +36,25 @@ export function Status() {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-md px-4 py-24 text-center">
+      <div className="mk-form mk-center-note">
         {status === 'DONE' && reportSlug ? (
           <>
-            <h1 className="text-xl font-semibold">{t.status.ready}</h1>
-            <p className="mt-2 text-sm text-slate-500">{t.status.emailSent}</p>
-            <Link
-              to={`/report/${reportSlug}`}
-              className="mt-6 inline-block rounded-full bg-slate-900 px-6 py-2 font-medium text-white"
-            >
+            <span className="big">{t.status.ready}</span>
+            <p className="mk-hint">{t.status.emailSent}</p>
+            <Link to={`/report/${reportSlug}`} className="mk-btn">
               View report
             </Link>
           </>
         ) : status === 'FAILED' ? (
           <>
-            <h1 className="text-xl font-semibold">{t.common.errorGeneric}</h1>
-            <p className="mt-2 text-sm text-slate-500">Order: {orderId}</p>
+            <span className="big">{t.common.errorGeneric}</span>
+            <p className="mk-hint">Order: {orderId}</p>
           </>
         ) : (
           <>
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
-            <h1 className="mt-6 text-xl font-semibold">{t.status.analyzing}</h1>
-            <p className="mt-2 text-sm text-slate-500">Order: {orderId}</p>
+            <span className="mk-spin" style={{ width: '2.4rem', height: '2.4rem', borderWidth: '3px' }} />
+            <span className="big">{t.status.analyzing}</span>
+            <p className="mk-hint">Order: {orderId}</p>
           </>
         )}
       </div>

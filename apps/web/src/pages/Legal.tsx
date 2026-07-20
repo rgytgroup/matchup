@@ -7,12 +7,10 @@ const UPDATED = 'July 2026';
 function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Layout>
-      <div className="mx-auto max-w-2xl px-4 py-12">
-        <h1 className="text-3xl font-bold">{title}</h1>
-        <p className="mt-2 text-sm text-slate-500">Last updated: {UPDATED}</p>
-        <div className="mt-6 space-y-4 text-slate-600 [&_h2]:mt-6 [&_h2]:font-semibold [&_h2]:text-slate-900">
-          {children}
-        </div>
+      <div className="mk-narrow mk-page mk-legal" style={{ maxWidth: '46rem' }}>
+        <h1>{title}</h1>
+        <p className="updated">Last updated: {UPDATED}</p>
+        <div className="prose">{children}</div>
       </div>
     </Layout>
   );

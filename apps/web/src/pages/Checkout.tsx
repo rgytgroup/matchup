@@ -32,9 +32,9 @@ export function Checkout() {
   if (!orderId) {
     return (
       <Layout>
-        <div className="mx-auto max-w-md px-4 py-16 text-center">
-          <p className="text-slate-600">No hay una orden en curso.</p>
-          <Link to="/start" className="mt-4 inline-block font-medium underline">
+        <div className="mk-form mk-center-note">
+          <p style={{ color: 'var(--ink-soft)' }}>No hay una orden en curso.</p>
+          <Link to="/start" className="mk-btn">
             {t.landing.heroCta}
           </Link>
         </div>
@@ -44,18 +44,16 @@ export function Checkout() {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold">Checkout</h1>
-        <p className="mt-4 text-slate-600">You're one step away from your report.</p>
-        <button
-          onClick={goToStripe}
-          disabled={loading}
-          className="mt-6 w-full rounded-full bg-slate-900 px-8 py-3 font-semibold text-white disabled:opacity-60"
-        >
+      <div className="mk-form mk-center-note" style={{ maxWidth: '30rem' }}>
+        <h1 className="font-display" style={{ fontWeight: 800, fontSize: '2rem', margin: 0 }}>
+          Checkout
+        </h1>
+        <p style={{ color: 'var(--ink-soft)', margin: 0 }}>You&apos;re one step away from your report.</p>
+        <button onClick={goToStripe} disabled={loading} className="mk-btn" style={{ width: '100%', justifyContent: 'center' }}>
           {loading ? t.common.loading : 'Pay with Stripe'}
         </button>
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-        <p className="mt-4 text-xs text-slate-500">{t.landing.noSubscriptions}</p>
+        {error && <p className="mk-error">{error}</p>}
+        <p className="mk-hint" style={{ fontSize: '.8rem' }}>{t.landing.noSubscriptions}</p>
       </div>
     </Layout>
   );
