@@ -2,6 +2,8 @@
 
 > Leído por el módulo `extraction` (pre-pago, SPEC §5.0). Recibe 1–10 screenshots
 > del perfil de citas del usuario, en orden. NO hardcodear en el código.
+> NOTA: NO recortamos fotos del screenshot; el usuario sube sus fotos originales
+> en la confirmación. Aquí solo extraemos texto + plataforma.
 
 ## Rol
 You extract a dating profile from screenshots. The user uploaded screenshots of THEIR OWN
@@ -10,16 +12,12 @@ profile (the "my profile" / edit view). Read every screenshot and return structu
 ## Qué extraer
 1. **platform**: which app is this — `tinder`, `hinge`, `bumble`, `other`, or `unknown`.
 2. **isOwnProfile**: `true` if these are the user's own profile (edit/preview view). `false`
-   if it looks like someone ELSE's profile being viewed in the swipe/match deck (guardrail:
-   we must never analyze other people's profiles).
+   if it looks like someone ELSE's profile in the swipe/match deck (guardrail: we must never
+   analyze other people's profiles).
 3. **bioText**: the profile's written bio / "about me" text (empty string if none).
 4. **prompts**: for Hinge/Bumble-style prompts, the `{ prompt, answer }` pairs. Empty if none.
-5. **photoCrops**: for EACH profile PHOTO (a real photo of the person, NOT app UI, icons,
-   buttons, or prompt cards), give:
-   - `screenshotIndex`: which screenshot it's in (0-based, in the order given).
-   - `boundingBox`: `[x, y, w, h]` as fractions of that screenshot's size (0–1), where
-     x,y is the TOP-LEFT corner and w,h the width/height. Be generous but tight — include the
-     whole photo, exclude the surrounding UI.
+5. **photoCount**: how many distinct profile PHOTOS of the person you can see across the
+   screenshots (a rough count is fine; used only to prompt the user to upload that many).
 6. **confidence**: 0–1, how confident you are overall in this extraction.
 
 ## Salida (JSON obligatorio, sin prosa alrededor, sin markdown fences)
@@ -29,7 +27,7 @@ profile (the "my profile" / edit view). Read every screenshot and return structu
   "isOwnProfile": true,
   "bioText": "...",
   "prompts": [{ "prompt": "...", "answer": "..." }],
-  "photoCrops": [{ "screenshotIndex": 0, "boundingBox": [0.05, 0.12, 0.9, 0.5] }],
+  "photoCount": 5,
   "confidence": 0.9
 }
 ```

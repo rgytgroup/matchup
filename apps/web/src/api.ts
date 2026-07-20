@@ -24,6 +24,33 @@ export async function createSubmission(form: FormData): Promise<{ orderId: strin
   return parse(await fetch(`${API_URL}/submissions`, { method: 'POST', body: form }));
 }
 
+/** Intake screenshot-first: sube screenshots y arranca la extracción (SPEC §5.0). */
+export async function startExtraction(form: FormData): Promise<{ orderId: string }> {
+  return parse(await fetch(`${API_URL}/submissions/extract`, { method: 'POST', body: form }));
+}
+
+/** Perfil extraído por Gemini desde los screenshots (o motivo de fallo). */
+export interface ExtractedProfile {
+  platform?: string;
+  isOwnProfile?: boolean;
+  bioText?: string;
+  prompts?: Array<{ prompt: string; answer: string }>;
+  photoCount?: number;
+  confidence?: number;
+  reason?: string;
+  message?: string;
+}
+
+/** Confirma/corrige lo extraído y sube las FOTOS ORIGINALES (multipart, enfoque híbrido). */
+export async function confirmExtraction(
+  orderId: string,
+  form: FormData,
+): Promise<{ ok: boolean }> {
+  return parse(
+    await fetch(`${API_URL}/submissions/${orderId}/confirm`, { method: 'POST', body: form }),
+  );
+}
+
 /** Crea la sesión de Stripe Checkout para una orden y devuelve la URL de pago. */
 export async function createCheckout(orderId: string): Promise<{ url: string }> {
   return parse(
@@ -35,9 +62,13 @@ export async function createCheckout(orderId: string): Promise<{ url: string }> 
   );
 }
 
-export async function getStatus(
-  orderId: string,
-): Promise<{ status: string; reportSlug: string | null }> {
+export async function getStatus(orderId: string): Promise<{
+  status: string;
+  intakeMode: string;
+  platform: string | null;
+  extractedProfile: ExtractedProfile | null;
+  reportSlug: string | null;
+}> {
   return parse(await fetch(`${API_URL}/status/${orderId}`));
 }
 

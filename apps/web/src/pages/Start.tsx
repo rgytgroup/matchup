@@ -1,19 +1,17 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  isTierId,
-  PLATFORMS,
-  PLATFORM_LABELS,
-  TIERS,
-  UPLOAD_RULES,
-  type Platform,
-  type TierId,
-} from '@matchup/shared';
+import { isTierId, TIERS, type TierId } from '@matchup/shared';
 import { useI18n } from '../i18n';
 import { Layout } from '../components/Layout';
-import { createSubmission } from '../api';
+import { startExtraction } from '../api';
 
-/** Intake (SPEC §4.2): cuestionario + upload 3–8 fotos + bio → crea la orden y va a checkout. */
+const MAX_SCREENSHOTS = 10;
+const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
+
+/**
+ * Intake screenshot-first (SPEC §5.0): el usuario sube screenshots de su perfil;
+ * Gemini extrae el texto y en la pantalla de confirmación sube sus fotos originales.
+ */
 export function Start() {
   const t = useI18n();
   const navigate = useNavigate();
@@ -24,45 +22,37 @@ export function Start() {
     initialTier && isTierId(initialTier) ? initialTier : 'AUDIT',
   );
   const [email, setEmail] = useState('');
-  const [bio, setBio] = useState('');
-  const [platform, setPlatform] = useState<Platform>('hinge');
-  const [q, setQ] = useState({ goal: '', ageRange: '', city: '' });
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [screenshots, setScreenshots] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   function onFiles(list: FileList | null) {
     if (!list) return;
     const files = Array.from(list);
-    const tooBig = files.find((f) => f.size > UPLOAD_RULES.maxBytesPerPhoto);
-    if (tooBig) {
-      setError(`"${tooBig.name}" supera el tamaño máximo permitido.`);
+    const bad = files.find((f) => !ACCEPTED.includes(f.type));
+    if (bad) {
+      setError(`"${bad.name}" no es una imagen válida (usa PNG, JPG o WEBP).`);
       return;
     }
     setError(null);
-    setPhotos(files.slice(0, UPLOAD_RULES.maxPhotos));
+    setScreenshots(files.slice(0, MAX_SCREENSHOTS));
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return setError('Ingresa tu email.');
-    if (photos.length < UPLOAD_RULES.minPhotos) {
-      return setError(`Sube al menos ${UPLOAD_RULES.minPhotos} fotos.`);
-    }
+    if (screenshots.length < 1) return setError('Sube al menos un screenshot de tu perfil.');
 
     const form = new FormData();
     form.append('email', email);
     form.append('tier', tier);
-    form.append('bioText', bio);
-    form.append('platform', platform);
-    form.append('questionnaire', JSON.stringify(q));
-    photos.forEach((p) => form.append('photos', p));
+    screenshots.forEach((s) => form.append('screenshots', s));
 
     setSubmitting(true);
     setError(null);
     try {
-      const { orderId } = await createSubmission(form);
-      navigate(`/checkout?orderId=${orderId}`);
+      const { orderId } = await startExtraction(form);
+      navigate(`/confirm/${orderId}`);
     } catch (err) {
       setError((err as Error).message);
       setSubmitting(false);
@@ -72,7 +62,10 @@ export function Start() {
   return (
     <Layout>
       <form onSubmit={onSubmit} className="mx-auto max-w-2xl space-y-8 px-4 py-12">
-        <h1 className="text-3xl font-bold">{t.start.title}</h1>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">{t.start.title}</h1>
+          <p className="text-slate-600">{t.start.subtitle}</p>
+        </div>
 
         <div className="space-y-2">
           <span className="text-lg font-semibold">Plan</span>
@@ -111,57 +104,20 @@ export function Start() {
         </div>
 
         <div className="space-y-2">
-          <span className="text-lg font-semibold">Which app is this profile on?</span>
-          <p className="text-sm text-slate-500">We tailor your rewritten bios and prompts to this platform.</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {PLATFORMS.map((pf) => (
-              <button
-                type="button"
-                key={pf}
-                onClick={() => setPlatform(pf)}
-                className={`rounded-xl border p-3 text-center font-medium ${
-                  platform === pf ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
-                }`}
-              >
-                {PLATFORM_LABELS[pf]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <fieldset className="space-y-4">
-          <legend className="text-lg font-semibold">{t.start.questionnaire}</legend>
-          <TextField label="What's your main goal?" value={q.goal} onChange={(v) => setQ({ ...q, goal: v })} />
-          <TextField label="Your age range" value={q.ageRange} onChange={(v) => setQ({ ...q, ageRange: v })} />
-          <TextField label="City" value={q.city} onChange={(v) => setQ({ ...q, city: v })} />
-        </fieldset>
-
-        <div className="space-y-2">
-          <label className="text-lg font-semibold">{t.start.uploadPhotos}</label>
+          <label className="text-lg font-semibold">{t.start.uploadScreenshots}</label>
           <input
             type="file"
             multiple
-            accept={UPLOAD_RULES.acceptedMimeTypes.join(',')}
+            accept={ACCEPTED.join(',')}
             onChange={(e) => onFiles(e.target.files)}
             className="block w-full text-sm"
           />
-          <p className="text-sm text-slate-500">{t.start.uploadHint}</p>
-          {photos.length > 0 && (
-            <p className="text-sm text-slate-600">{photos.length} foto(s) seleccionada(s)</p>
+          <p className="text-sm text-slate-500">{t.start.screenshotHint}</p>
+          {screenshots.length > 0 && (
+            <p className="text-sm text-slate-600">
+              {screenshots.length} {t.start.screenshotsSelected}
+            </p>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="bio" className="text-lg font-semibold">
-            {t.start.bioLabel}
-          </label>
-          <textarea
-            id="bio"
-            rows={5}
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-3"
-          />
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -175,27 +131,5 @@ export function Start() {
         </button>
       </form>
     </Layout>
-  );
-}
-
-function TextField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-slate-700">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 p-2"
-      />
-    </div>
   );
 }

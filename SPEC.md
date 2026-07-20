@@ -17,24 +17,48 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 ## 3. Modelo de datos (Prisma)
 - `User`: id, email, createdAt.
 - `Order`: id, userId, tier (AUDIT | AUDIT_PLUS_PHOTOS), stripeSessionId, status (PENDING|PAID|REFUNDED), amountUsd, createdAt.
-- `Submission`: id, orderId, questionnaire (Json: goal, apps[], ageRange, city), bioText, photoUrls (String[]), status (UPLOADED|ANALYZING|DONE|FAILED), createdAt.
+- `Submission`: id, orderId, intakeMode (SCREENSHOTS|MANUAL), screenshotUrls (String[]), extractedProfile (Json — ver §5.0: platform, bioText, prompts[], photoRefs[], confidence), questionnaire (Json: goal, ageRange, city), bioText (solo modo MANUAL), photoUrls (String[]), status (UPLOADED|EXTRACTING|CONFIRMING|ANALYZING|DONE|FAILED), createdAt.
 - `Report`: id, submissionId, resultJson (Json — ver schema §5), pdfUrl, publicSlug (acceso por link), createdAt.
 - `PhotoJob`: id, orderId, provider, trainingId, status (QUEUED|TRAINING|GENERATING|QC|DONE|FAILED), outputUrls (String[]), acceptedUrls (String[]), costUsd.
 - `Event`: id, type, meta (Json), createdAt — analítica interna mínima (visita checkout, compra, reembolso).
 
 ## 4. Páginas (frontend)
 1. `/` Landing: promesa, ejemplos de reporte, precios visibles ($14.99 / $34.99), FAQ, CTA.
-2. `/start` Intake: cuestionario (6 preguntas) → upload 3–8 fotos (drag&drop, validación de tamaño/formato) → pegar bio/prompts.
+2. `/start` Intake **screenshot-first** (diseño mobile-first obsesivo — el 90% del tráfico llega desde el teléfono vía TikTok):
+   - **Paso 1 — Camino principal:** "Sube screenshots de tu perfil tal como se ve en tu app" (3–10 capturas desde la galería del teléfono, selector nativo, previews inmediatos). La IA extrae todo sola (ver §5.0). Camino alterno visible pero secundario: "Prefiero ingresarlo manualmente" → upload de 3–8 fotos + pegar bio/prompts + seleccionar plataforma.
+   - **Paso 2 — Confirmación de extracción (solo modo screenshots):** pantalla "Esto encontramos en tu perfil" mostrando plataforma detectada, fotos, bio y prompts extraídos, editables con un tap. Genera confianza ("me leyó el perfil") y corrige errores de extracción antes de pagar.
+   - **Paso 3 — Mini-cuestionario (máx. 3 preguntas):** objetivo (relación/casual), rango de edad que busca, ciudad. REGLA: todo campo debe cambiar visiblemente el output; la plataforma NO se pregunta si se detectó del screenshot.
+   - **Paso 4 →** checkout.
 3. `/checkout` → redirige a Stripe Checkout con el tier elegido.
 4. `/report/[slug]` Reporte web (accesible sin login vía slug): score global, score por foto con la foto al lado, diagnóstico de bio, 3 bios nuevas, prompts, plan de 5 pasos, botón "Download PDF". Si tier fotos: galería de fotos aceptadas con descarga.
 5. `/status/[orderId]` Estado del procesamiento (polling): analizando → listo → email enviado.
 6. Legal: `/terms`, `/privacy`, `/refunds` (reembolso 7 días).
 
 ## 5. Pipeline de análisis (backend)
-1. Webhook `checkout.session.completed` → marca Order PAID → encola análisis.
-2. Llamada a Gemini con las fotos + bio + cuestionario. **Salida JSON obligatoria con este schema:**
+
+### 5.0 Extracción desde screenshots (pre-checkout, modo SCREENSHOTS)
+1. Al subir screenshots → job de extracción con Gemini visión. **Salida JSON obligatoria:**
 ```json
 {
+  "platform": "tinder|hinge|bumble|other|unknown",
+  "bioText": "...",
+  "prompts": [{ "prompt": "...", "answer": "..." }],
+  "photoCrops": [{ "screenshotIndex": 0, "boundingBox": [x, y, w, h] }],
+  "confidence": 0-1
+}
+```
+2. Recortar las fotos del perfil desde los screenshots (photoCrops) y guardarlas como photoUrls; descartar elementos de UI (botones, iconos de la app).
+3. `confidence < 0.7` o extracción vacía → llevar al usuario al modo MANUAL con mensaje amable, sin callejones sin salida.
+4. Mostrar pantalla de confirmación (página §4.2 paso 2); lo confirmado/corregido por el usuario es la fuente de verdad para el análisis.
+5. La extracción corre ANTES del pago (es parte de la magia que convierte); su costo (~$0.02–0.05) se asume como costo de adquisición de quienes no compran.
+6. Guardrail: los screenshots deben ser del PROPIO perfil del usuario ("Mi perfil" / vista de edición). Si la extracción detecta el perfil de un tercero (vista de swipe/match de otra persona) → rechazar con mensaje claro. Nunca analizar perfiles ajenos.
+
+### 5.1 Análisis (post-pago)
+1. Webhook `checkout.session.completed` → marca Order PAID → encola análisis.
+2. Llamada a Gemini con las fotos + bio/prompts confirmados + plataforma + cuestionario. **El análisis es consciente de la plataforma:** las bios reescritas y prompts sugeridos salen en el formato y tono de la plataforma detectada (Hinge = prompts con respuestas; Tinder = bio corta foto-primero; Bumble = señales para que ella inicie), y el reporte lo hace explícito ("Optimizado para Hinge"). **Salida JSON obligatoria con este schema:**
+```json
+{
+  "platform": "tinder|hinge|bumble|other",
   "overallScore": 0-100,
   "photos": [{ "index": 0, "score": 0-100, "keep": true, "issues": ["..."], "strengths": ["..."] }],
   "missingArchetypes": ["social proof photo", "hobby photo"],
@@ -67,6 +91,9 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 
 ## 9. Criterios de aceptación del MVP (definition of done)
 - [ ] Flujo completo pago→análisis→reporte→email sin intervención manual.
+- [ ] Intake screenshot-first: extracción correcta (plataforma + bio + fotos) en ≥85% de screenshots reales de prueba de Tinder, Hinge y Bumble; fallback a manual sin callejones sin salida.
+- [ ] Pantalla de confirmación editable funcionando en móvil (tap para corregir).
+- [ ] Reporte adaptado a la plataforma detectada (verificar con 3 perfiles: uno por plataforma).
 - [ ] Reporte JSON válido en ≥95% de submissions reales de prueba (20 perfiles).
 - [ ] PDF descargable idéntico al reporte web.
 - [ ] Webhook de Stripe idempotente (reintento no duplica análisis).

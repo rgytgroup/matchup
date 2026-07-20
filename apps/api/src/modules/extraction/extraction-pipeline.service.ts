@@ -3,7 +3,6 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/nestjs';
-import sharp from 'sharp';
 import { isPlatform, type TierId } from '@matchup/shared';
 import { EventsService } from '../../common/events/events.service';
 import { StorageService, type UploadableFile } from '../../storage/storage.service';
@@ -11,7 +10,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EXTRACTION_QUEUE } from '../../queue/queue.constants';
 import { OrdersService } from '../orders/orders.service';
 import { AnalysisService } from '../analysis/analysis.service';
-import type { ExtractedProfile } from '../analysis/extraction.types';
 
 const MIN_CONFIDENCE = 0.7; // SPEC §5.0.3
 
@@ -69,6 +67,7 @@ export class ExtractionPipelineService {
       prompts?: Array<{ prompt: string; answer: string }>;
       questionnaire?: unknown;
     },
+    photos: UploadableFile[],
   ): Promise<{ ok: boolean }> {
     const submission = await this.prisma.submission.findUnique({ where: { orderId } });
     if (!submission) return { ok: false };
@@ -80,16 +79,20 @@ export class ExtractionPipelineService {
     const composedBio = [data.bioText ?? submission.bioText, ...prompts.map((p) => `${p.prompt}: ${p.answer}`)]
       .filter(Boolean)
       .join('\n');
+    // Enfoque híbrido: el usuario sube sus fotos ORIGINALES (alta resolución).
+    const photoUrls = await this.storage.uploadPhotos(orderId, photos);
 
     await this.prisma.submission.update({
       where: { id: submission.id },
       data: {
         platform,
         bioText: composedBio,
+        photoUrls,
         questionnaire: (data.questionnaire ?? submission.questionnaire ?? {}) as Prisma.InputJsonValue,
+        status: 'CONFIRMING',
       },
     });
-    await this.events.record('extraction.confirmed', { orderId });
+    await this.events.record('extraction.confirmed', { orderId, photos: photoUrls.length });
     return { ok: true };
   }
 
@@ -108,23 +111,22 @@ export class ExtractionPipelineService {
         return;
       }
 
-      const photoPaths = await this.cropPhotos(orderId, submission.screenshotUrls, extracted.photoCrops);
+      // Enfoque híbrido: NO recortamos fotos del screenshot (imprecisas + baja calidad).
+      // El usuario sube sus fotos originales en la confirmación (mejor para audit y LoRA).
       const platform = extracted.platform === 'unknown' ? 'other' : extracted.platform;
-
       await this.prisma.submission.update({
         where: { id: submission.id },
         data: {
           extractedProfile: extracted as unknown as Prisma.InputJsonValue,
           platform,
           bioText: extracted.bioText,
-          photoUrls: photoPaths,
           status: 'CONFIRMING',
         },
       });
       await this.events.record('extraction.done', {
         orderId,
         confidence: extracted.confidence,
-        photos: photoPaths.length,
+        photoCount: extracted.photoCount,
         lowConfidence: extracted.confidence < MIN_CONFIDENCE,
       });
     } catch (err) {
@@ -145,44 +147,5 @@ export class ExtractionPipelineService {
       data: { status: 'FAILED', extractedProfile: { reason, message } as Prisma.InputJsonValue },
     });
     await this.events.record('extraction.rejected', { orderId, reason });
-  }
-
-  /** Recorta cada foto del perfil desde su screenshot (bounding box normalizado 0–1). */
-  private async cropPhotos(
-    orderId: string,
-    screenshotPaths: string[],
-    crops: ExtractedProfile['photoCrops'],
-  ): Promise<string[]> {
-    const signed = await this.storage.signUrls(screenshotPaths, 3600);
-    const out: string[] = [];
-    for (let i = 0; i < crops.length; i += 1) {
-      const crop = crops[i];
-      const url = signed[crop.screenshotIndex];
-      if (!url) continue;
-      try {
-        const res = await fetch(url);
-        if (!res.ok) continue;
-        const buffer = Buffer.from(await res.arrayBuffer());
-        const meta = await sharp(buffer).metadata();
-        const W = meta.width ?? 0;
-        const H = meta.height ?? 0;
-        if (!W || !H) continue;
-
-        const [x, y, w, h] = crop.boundingBox;
-        const left = Math.min(Math.max(0, Math.round(x * W)), W - 1);
-        const top = Math.min(Math.max(0, Math.round(y * H)), H - 1);
-        const width = Math.max(1, Math.min(Math.round(w * W), W - left));
-        const height = Math.max(1, Math.min(Math.round(h * H), H - top));
-
-        const cropped = await sharp(buffer)
-          .extract({ left, top, width, height })
-          .jpeg({ quality: 90 })
-          .toBuffer();
-        out.push(await this.storage.uploadBytes(`orders/${orderId}/${i}.jpg`, cropped, 'image/jpeg'));
-      } catch (e) {
-        this.logger.warn(`Recorte ${i} falló (${orderId}): ${(e as Error).message}`);
-      }
-    }
-    return out;
   }
 }

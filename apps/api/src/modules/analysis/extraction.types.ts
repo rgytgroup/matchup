@@ -6,15 +6,8 @@ export const extractedProfileSchema = z.object({
   isOwnProfile: z.boolean(),
   bioText: z.string().default(''),
   prompts: z.array(z.object({ prompt: z.string(), answer: z.string() })).default([]),
-  photoCrops: z
-    .array(
-      z.object({
-        screenshotIndex: z.number().int().nonnegative(),
-        // [x, y, w, h] como fracciones 0–1 del tamaño del screenshot.
-        boundingBox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
-      }),
-    )
-    .default([]),
+  // Cuántas fotos de perfil vio (para pedirle al usuario que suba sus originales).
+  photoCount: z.number().int().nonnegative().default(0),
   confidence: z.number().min(0).max(1),
 });
 

@@ -42,18 +42,49 @@ export class ExtractionController {
     return this.extraction.startExtraction(body.email, body.tier, files);
   }
 
-  /** Confirmación editable (SPEC §4.2 paso 2): la fuente de verdad para el análisis. */
+  /**
+   * Confirmación editable (SPEC §4.2 paso 2): la fuente de verdad para el análisis.
+   * Enfoque híbrido (C): el usuario sube aquí sus FOTOS ORIGINALES (alta resolución).
+   */
   @Post(':orderId/confirm')
+  @UseInterceptors(FilesInterceptor('photos', UPLOAD_RULES.maxPhotos))
   async confirm(
     @Param('orderId') orderId: string,
-    @Body()
-    body: {
-      platform?: string;
-      bioText?: string;
-      prompts?: Array<{ prompt: string; answer: string }>;
-      questionnaire?: unknown;
-    },
+    @UploadedFiles() files: Array<Express.Multer.File> = [],
+    @Body() body: { platform?: string; bioText?: string; prompts?: string; questionnaire?: string },
   ) {
-    return this.extraction.confirm(orderId, body);
+    if (files.length < UPLOAD_RULES.minPhotos || files.length > UPLOAD_RULES.maxPhotos) {
+      throw new BadRequestException(
+        `Sube entre ${UPLOAD_RULES.minPhotos} y ${UPLOAD_RULES.maxPhotos} fotos`,
+      );
+    }
+    const accepted = UPLOAD_RULES.acceptedMimeTypes as readonly string[];
+    for (const f of files) {
+      if (!accepted.includes(f.mimetype)) {
+        throw new BadRequestException(`Formato no permitido: ${f.mimetype}`);
+      }
+      if (f.size > UPLOAD_RULES.maxBytesPerPhoto) {
+        throw new BadRequestException(`"${f.originalname}" supera el tamaño máximo`);
+      }
+    }
+    return this.extraction.confirm(
+      orderId,
+      {
+        platform: body.platform,
+        bioText: body.bioText,
+        prompts: this.safeJson(body.prompts),
+        questionnaire: this.safeJson(body.questionnaire),
+      },
+      files,
+    );
+  }
+
+  private safeJson<T>(raw?: string): T | undefined {
+    if (!raw) return undefined;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return undefined;
+    }
   }
 }
