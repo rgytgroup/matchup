@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as Sentry from '@sentry/nestjs';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ANALYSIS_QUEUE } from '../../queue/queue.constants';
@@ -84,6 +85,7 @@ export class AnalysisPipelineService {
         this.logger.warn(`No se pudo enviar el email (¿RESEND_API_KEY?): ${(mailErr as Error).message}`);
       }
     } catch (err) {
+      Sentry.captureException(err, { extra: { orderId, phase: 'analysis' } });
       await this.submissions.setStatus(submission.id, 'FAILED');
       await this.events.record('analysis.failed', { orderId, error: (err as Error).message });
       this.logger.error(`Análisis FAILED (orden ${orderId}): ${(err as Error).message}`);

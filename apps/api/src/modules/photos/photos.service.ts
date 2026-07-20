@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as Sentry from '@sentry/nestjs';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import JSZip from 'jszip';
@@ -207,6 +208,7 @@ export class PhotosService {
   }
 
   private async failJob(jobId: string, orderId: string, err: unknown, fase: string): Promise<void> {
+    Sentry.captureException(err, { extra: { orderId, phase: `photos:${fase}` } });
     await this.prisma.photoJob.update({ where: { id: jobId }, data: { status: 'FAILED' } });
     await this.events.record('photos.failed', { orderId, fase, error: (err as Error).message });
     this.logger.error(`PhotoJob FAILED en ${fase} (orden ${orderId}): ${(err as Error).message}`);

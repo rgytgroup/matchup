@@ -1,3 +1,4 @@
+import './instrument'; // Sentry: debe ir de primero.
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';

@@ -32,6 +32,8 @@ export const envSchema = z.object({
   CORS_ORIGINS: z.string().default(''),
   // Redis para la cola durable (BullMQ). Ej. Upstash: rediss://...@...:6379
   REDIS_URL: z.string().default('redis://localhost:6379'),
+  // Monitoreo de errores (Sentry). Vacío = desactivado.
+  SENTRY_DSN: z.string().default(''),
   PORT: z.coerce.number().default(3000),
   ADMIN_ALERT_EMAIL: z.string().default(''),
 });

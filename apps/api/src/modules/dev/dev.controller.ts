@@ -31,6 +31,12 @@ export class DevController {
     return { enqueued: true, orderId };
   }
 
+  /** Lanza un error a propósito para verificar que Sentry lo captura. */
+  @Get('sentry-test')
+  sentryTest(): never {
+    throw new Error('MatchUp Sentry test error (dev endpoint)');
+  }
+
   /** Dispara el pipeline de fotos en segundo plano (entrenamiento + generación + QC). */
   @Post('photos/:orderId')
   startPhotos(@Param('orderId') orderId: string) {
