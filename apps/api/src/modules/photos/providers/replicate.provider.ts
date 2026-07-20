@@ -57,9 +57,10 @@ export class ReplicatePhotoProvider implements PhotoProvider {
   }
 
   async generate(modelVersion: string, prompt: string): Promise<string[]> {
+    const numOutputs = this.config.get<number>('PHOTO_NUM_OUTPUTS') ?? 4;
     const output = await this.withRetryOn429(() =>
       this.getClient().run(modelVersion as `${string}/${string}:${string}`, {
-        input: { prompt, num_outputs: 1, output_format: 'jpg', aspect_ratio: '1:1' },
+        input: { prompt, num_outputs: numOutputs, output_format: 'jpg', aspect_ratio: '1:1' },
       }),
     );
     return this.extractUrls(output);

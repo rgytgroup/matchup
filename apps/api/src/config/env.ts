@@ -25,6 +25,8 @@ export const envSchema = z.object({
   SUPABASE_BUCKET: z.string().default('submissions'),
   // QC de fotos: umbral de parecido (0-100) para aceptar una foto generada.
   PHOTO_QC_THRESHOLD: z.coerce.number().default(70),
+  // Imágenes generadas por escenario (SPEC §6.2 pide 40-60 en 6-8 escenarios).
+  PHOTO_NUM_OUTPUTS: z.coerce.number().default(4),
   APP_BASE_URL: z.string().default('http://localhost:5173'),
   // Orígenes CORS permitidos (coma-separado). Vacío = deriva de APP_BASE_URL + localhost.
   CORS_ORIGINS: z.string().default(''),
