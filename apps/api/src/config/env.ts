@@ -23,6 +23,8 @@ export const envSchema = z.object({
   RESEND_API_KEY: z.string().default(''),
   EMAIL_FROM: z.string().default('MatchUp <onboarding@resend.dev>'),
   SUPABASE_BUCKET: z.string().default('submissions'),
+  // QC de fotos: umbral de parecido (0-100) para aceptar una foto generada.
+  PHOTO_QC_THRESHOLD: z.coerce.number().default(70),
   APP_BASE_URL: z.string().default('http://localhost:5173'),
   // Orígenes CORS permitidos (coma-separado). Vacío = deriva de APP_BASE_URL + localhost.
   CORS_ORIGINS: z.string().default(''),

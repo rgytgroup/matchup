@@ -32,11 +32,14 @@ export async function getStatus(
   return parse(await fetch(`${API_URL}/status/${orderId}`));
 }
 
+export type PhotosStatus = 'NONE' | 'PROCESSING' | 'READY' | 'FAILED';
+
 export async function getReport(slug: string): Promise<{
   slug: string;
   result: ReportResult;
   pdfUrl: string | null;
   photos: string[];
+  photosStatus: PhotosStatus;
   createdAt: string;
 }> {
   return parse(await fetch(`${API_URL}/report/${slug}`));

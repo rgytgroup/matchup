@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../storage/storage.service';
 import { ReportsService } from './reports.service';
 
+type PhotosStatus = 'NONE' | 'PROCESSING' | 'READY' | 'FAILED';
+
 @Controller('report')
 export class ReportsController {
   constructor(
@@ -20,19 +22,33 @@ export class ReportsController {
 
     const pdfUrl = report.pdfUrl ? (await this.storage.signUrls([report.pdfUrl], 3600))[0] : null;
 
-    // Galería de fotos IA del tier premium (si existe y están listas).
+    // Estado de la galería de fotos IA del tier premium (SPEC §4.4).
     const submission = await this.prisma.submission.findUnique({
       where: { id: report.submissionId },
       include: { order: { include: { photoJob: true } } },
     });
-    const photoPaths = submission?.order?.photoJob?.acceptedUrls ?? [];
-    const photos = photoPaths.length > 0 ? await this.storage.signUrls(photoPaths, 3600) : [];
+    const order = submission?.order;
+    const job = order?.photoJob;
+
+    let photosStatus: PhotosStatus = 'NONE';
+    let photos: string[] = [];
+    if (order?.tier === 'AUDIT_PLUS_PHOTOS') {
+      if (job?.status === 'DONE') {
+        photosStatus = 'READY';
+        photos = await this.storage.signUrls(job.acceptedUrls, 3600);
+      } else if (job?.status === 'FAILED') {
+        photosStatus = 'FAILED';
+      } else {
+        photosStatus = 'PROCESSING'; // QUEUED / TRAINING / GENERATING / QC (o aún sin job)
+      }
+    }
 
     return {
       slug: report.publicSlug,
       result: report.resultJson as unknown as ReportResult,
       pdfUrl,
       photos,
+      photosStatus,
       createdAt: report.createdAt,
     };
   }

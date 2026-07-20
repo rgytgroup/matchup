@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import JSZip from 'jszip';
 import { EventsService } from '../../common/events/events.service';
 import { EmailService } from '../../notifications/email.service';
@@ -8,9 +9,10 @@ import { StorageService } from '../../storage/storage.service';
 import { AnalysisService } from '../analysis/analysis.service';
 import { PHOTO_PROVIDER, TRIGGER_WORD, type PhotoProvider } from './photo-provider.interface';
 
-const QC_THRESHOLD = 70; // parecido mínimo (0-100) para aceptar una foto
+const QC_THRESHOLD_DEFAULT = 70; // parecido mínimo (0-100) para aceptar una foto
 const TARGET_PHOTOS = 30; // cuántas entregar (SPEC §1)
 const MIN_ACCEPTABLE = 20; // por debajo de esto, regenerar/alertar (SPEC §6.4)
+const MAX_GEN_ROUNDS = 2; // tandas de generación (1 inicial + 1 regeneración si quedan pocas)
 const POLL_INTERVAL_MS = 15_000;
 const MAX_POLLS = 160; // ~40 min
 const GEN_SPACING_MS = 2_000; // pausa entre generaciones (gentil con el rate limit)
@@ -28,6 +30,7 @@ export class PhotosService {
     private readonly analysis: AnalysisService,
     private readonly events: EventsService,
     private readonly email: EmailService,
+    private readonly config: ConfigService,
   ) {}
 
   /** Pipeline completo: zip → entrenar → esperar → generar → QC. */
@@ -89,39 +92,40 @@ export class PhotosService {
       const submission = await this.prisma.submission.findUnique({ where: { orderId } });
       if (!submission) throw new Error(`sin submission para ${orderId}`);
       const signed = await this.storage.signUrls(submission.photoUrls, 3600);
+      const reference = signed[0];
+      const threshold = this.config.get<number>('PHOTO_QC_THRESHOLD') ?? QC_THRESHOLD_DEFAULT;
 
       await this.prisma.photoJob.update({ where: { id: jobId }, data: { status: 'GENERATING' } });
 
       const scenarios = this.parseScenarios(this.prompts.load('photo-scenarios'));
-      const outputs: string[] = [];
-      for (const prompt of scenarios) {
-        const urls = await this.provider.generate(modelVersion, prompt);
-        outputs.push(...urls);
-        await this.sleep(GEN_SPACING_MS);
+      const accepted: string[] = []; // URLs temporales de Replicate que pasaron el QC
+      const allOutputs: string[] = [];
+
+      // Genera y hace QC por tandas. Si quedan pocas (<20), regenera otra tanda (SPEC §6.4).
+      for (let round = 0; round < MAX_GEN_ROUNDS && accepted.length < TARGET_PHOTOS; round += 1) {
+        for (const prompt of scenarios) {
+          if (accepted.length >= TARGET_PHOTOS) break;
+          const urls = await this.provider.generate(modelVersion, prompt);
+          allOutputs.push(...urls);
+          for (const url of urls) {
+            const score = await this.analysis.scoreSimilarity(reference, url);
+            if (score >= threshold) accepted.push(url);
+          }
+          await this.sleep(GEN_SPACING_MS);
+        }
+        if (accepted.length >= MIN_ACCEPTABLE) break;
       }
+
       await this.prisma.photoJob.update({
         where: { id: jobId },
-        data: { outputUrls: outputs, status: 'QC' },
+        data: { outputUrls: allOutputs, status: 'QC' },
       });
 
-      // QC de parecido facial vs la primera foto original; quedarse con las mejores.
-      const reference = signed[0];
-      const accepted: string[] = [];
-      for (const url of outputs) {
-        const score = await this.analysis.scoreSimilarity(reference, url);
-        if (score >= QC_THRESHOLD) accepted.push(url);
-      }
-      const finalAccepted = accepted.slice(0, TARGET_PHOTOS);
-
-      // Persistir en Supabase: las URLs de Replicate son temporales (~1h).
+      // Persistir las aceptadas en Supabase (las URLs de Replicate expiran ~1h).
       const persisted: string[] = [];
-      for (let i = 0; i < finalAccepted.length; i += 1) {
+      for (const [i, url] of accepted.slice(0, TARGET_PHOTOS).entries()) {
         try {
-          const path = await this.storage.uploadFromUrl(
-            `orders/${orderId}/generated/${i}.jpg`,
-            finalAccepted[i],
-          );
-          persisted.push(path);
+          persisted.push(await this.storage.uploadFromUrl(`orders/${orderId}/generated/${i}.jpg`, url));
         } catch (e) {
           this.logger.warn(`No se pudo persistir la foto ${i} (${orderId}): ${(e as Error).message}`);
         }
@@ -133,24 +137,44 @@ export class PhotosService {
       });
       await this.events.record('photos.done', {
         orderId,
-        generated: outputs.length,
+        generated: allOutputs.length,
         accepted: persisted.length,
       });
 
       if (persisted.length < MIN_ACCEPTABLE) {
-        // TODO(SPEC §6.4): regenerar una tanda automáticamente antes de alertar.
         await this.events.record('photos.low_quality', { orderId, accepted: persisted.length });
         this.logger.warn(`PhotoJob ${orderId}: solo ${persisted.length} fotos aceptables (<${MIN_ACCEPTABLE}).`);
         await this.email
           .alertAdmin(
             `MatchUp: fotos de baja calidad (${orderId})`,
-            `Solo ${persisted.length} fotos superaron el QC (<${MIN_ACCEPTABLE}). Requiere revisión manual (SPEC §6.4).`,
+            `Solo ${persisted.length} fotos superaron el QC (<${MIN_ACCEPTABLE}) tras ${MAX_GEN_ROUNDS} tandas. Requiere revisión manual (SPEC §6.4).`,
           )
           .catch(() => undefined);
+      } else {
+        await this.notifyPhotosReady(orderId, persisted.length);
       }
     } catch (err) {
       await this.failJob(jobId, orderId, err, 'generación');
     }
+  }
+
+  /** Email al usuario cuando sus fotos IA están listas (link al reporte). */
+  private async notifyPhotosReady(orderId: string, count: number): Promise<void> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { user: true, submission: { include: { report: true } } },
+    });
+    const slug = order?.submission?.report?.publicSlug;
+    const email = order?.user.email;
+    if (!slug || !email) return;
+
+    const reportUrl = `${this.config.get<string>('APP_BASE_URL')}/report/${slug}`;
+    await this.email
+      .sendPhotosReady(email, reportUrl)
+      .catch((e) =>
+        this.logger.warn(`No se pudo enviar email de fotos listas (${orderId}): ${(e as Error).message}`),
+      );
+    await this.events.record('photos.email_sent', { orderId, count });
   }
 
   private async failJob(jobId: string, orderId: string, err: unknown, fase: string): Promise<void> {

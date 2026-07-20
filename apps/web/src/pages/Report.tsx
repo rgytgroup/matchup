@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import type { ReportResult } from '@matchup/shared';
 import { useI18n } from '../i18n';
 import { Layout } from '../components/Layout';
-import { getReport } from '../api';
+import { getReport, type PhotosStatus } from '../api';
 
 /** Reporte web accesible por slug sin login (SPEC §4.4). */
 export function Report() {
@@ -13,13 +13,16 @@ export function Report() {
     result: ReportResult;
     pdfUrl: string | null;
     photos: string[];
+    photosStatus: PhotosStatus;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) return;
     getReport(slug)
-      .then((r) => setData({ result: r.result, pdfUrl: r.pdfUrl, photos: r.photos }))
+      .then((r) =>
+        setData({ result: r.result, pdfUrl: r.pdfUrl, photos: r.photos, photosStatus: r.photosStatus }),
+      )
       .catch((e) => setError((e as Error).message));
   }, [slug]);
 
@@ -116,7 +119,22 @@ export function Report() {
           </ol>
         </Card>
 
-        {data.photos.length > 0 && (
+        {data.photosStatus === 'PROCESSING' && (
+          <Card title={t.report.aiPhotos}>
+            <div className="flex items-center gap-3 text-slate-600">
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
+              <span>{t.report.photosProcessing}</span>
+            </div>
+          </Card>
+        )}
+
+        {data.photosStatus === 'FAILED' && (
+          <Card title={t.report.aiPhotos}>
+            <p className="text-slate-600">{t.report.photosFailed}</p>
+          </Card>
+        )}
+
+        {data.photosStatus === 'READY' && data.photos.length > 0 && (
           <Card title={t.report.aiPhotos}>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {data.photos.map((url, i) => (

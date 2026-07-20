@@ -35,6 +35,18 @@ export class EmailService {
     });
   }
 
+  async sendPhotosReady(to: string, reportUrl: string): Promise<void> {
+    await this.getClient().emails.send({
+      from: this.from,
+      to,
+      subject: 'Your MatchUp AI photos are ready',
+      html: `
+        <p>Your AI-generated photos are ready!</p>
+        <p><a href="${reportUrl}">View your photos</a></p>
+      `,
+    });
+  }
+
   async sendRefund(to: string): Promise<void> {
     await this.getClient().emails.send({
       from: this.from,

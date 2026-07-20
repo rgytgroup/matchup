@@ -49,6 +49,10 @@ export const en = {
     suggestedPrompts: 'Suggested prompts',
     actionPlan: 'Your 5-step action plan',
     aiPhotos: 'Your AI photos',
+    photosProcessing:
+      "We're generating your AI photos — this takes about 20–30 minutes. We'll email you when they're ready.",
+    photosFailed:
+      'We hit a snag generating your photos. Our team has been notified and will get it sorted.',
   },
   status: {
     analyzing: 'Analyzing your profile…',
