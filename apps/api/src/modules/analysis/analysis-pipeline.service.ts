@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { ANALYSIS_QUEUE } from '../../queue/queue.constants';
 import { EventsService } from '../../common/events/events.service';
 import { StorageService } from '../../storage/storage.service';
 import { EmailService } from '../../notifications/email.service';
@@ -27,16 +30,14 @@ export class AnalysisPipelineService {
     private readonly email: EmailService,
     private readonly events: EventsService,
     private readonly config: ConfigService,
+    @InjectQueue(ANALYSIS_QUEUE) private readonly queue: Queue,
   ) {}
 
-  /** Llamado desde el webhook. Dispara el procesamiento en segundo plano. */
+  /** Encola el análisis en la cola durable (BullMQ). El webhook responde rápido. */
   async enqueue(orderId: string): Promise<void> {
     await this.events.record('analysis.enqueued', { orderId });
-    // Fire-and-forget: el webhook responde 200 sin esperar el análisis.
-    // TODO(escala): reemplazar por una cola/worker real (BullMQ, etc.).
-    void this.process(orderId).catch((err) =>
-      this.logger.error(`process(${orderId}) lanzó: ${(err as Error).message}`),
-    );
+    // jobId por orden evita duplicados si el webhook llega dos veces.
+    await this.queue.add('process', { orderId }, { attempts: 2, jobId: `analysis-${orderId}` });
   }
 
   async process(orderId: string): Promise<void> {

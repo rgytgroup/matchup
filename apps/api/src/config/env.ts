@@ -30,6 +30,8 @@ export const envSchema = z.object({
   APP_BASE_URL: z.string().default('http://localhost:5173'),
   // Orígenes CORS permitidos (coma-separado). Vacío = deriva de APP_BASE_URL + localhost.
   CORS_ORIGINS: z.string().default(''),
+  // Redis para la cola durable (BullMQ). Ej. Upstash: rediss://...@...:6379
+  REDIS_URL: z.string().default('redis://localhost:6379'),
   PORT: z.coerce.number().default(3000),
   ADMIN_ALERT_EMAIL: z.string().default(''),
 });

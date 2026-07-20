@@ -24,6 +24,13 @@ export class DevController {
     return { triggered: true, orderId };
   }
 
+  /** Encola el análisis (prueba el circuito cola durable → worker). */
+  @Post('enqueue/:orderId')
+  async enqueue(@Param('orderId') orderId: string) {
+    await this.pipeline.enqueue(orderId);
+    return { enqueued: true, orderId };
+  }
+
   /** Dispara el pipeline de fotos en segundo plano (entrenamiento + generación + QC). */
   @Post('photos/:orderId')
   startPhotos(@Param('orderId') orderId: string) {

@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import JSZip from 'jszip';
+import { PHOTOS_QUEUE } from '../../queue/queue.constants';
 import { EventsService } from '../../common/events/events.service';
 import { EmailService } from '../../notifications/email.service';
 import { PromptLoaderService } from '../../prompts/prompt-loader.service';
@@ -31,9 +34,19 @@ export class PhotosService {
     private readonly events: EventsService,
     private readonly email: EmailService,
     private readonly config: ConfigService,
+    @InjectQueue(PHOTOS_QUEUE) private readonly queue: Queue,
   ) {}
 
-  /** Pipeline completo: zip → entrenar → esperar → generar → QC. */
+  /** Encola el job de fotos en la cola durable (BullMQ). */
+  async enqueue(orderId: string): Promise<void> {
+    await this.queue.add('generate', { orderId }, { attempts: 2, jobId: `photos-${orderId}` });
+  }
+
+  /**
+   * Pipeline completo: zip → entrenar → esperar → generar → QC.
+   * Reanudable: si ya hay un entrenamiento (en curso o terminado), NO re-entrena
+   * (clave para que un reintento tras reinicio no vuelva a pagar el entrenamiento).
+   */
   async startJob(orderId: string): Promise<void> {
     const submission = await this.prisma.submission.findUnique({ where: { orderId } });
     if (!submission) {
@@ -43,29 +56,45 @@ export class PhotosService {
 
     const job = await this.prisma.photoJob.upsert({
       where: { orderId },
-      update: { status: 'TRAINING' },
+      update: {},
       create: { orderId, provider: 'replicate', status: 'TRAINING', outputUrls: [], acceptedUrls: [] },
     });
+    if (job.status === 'DONE') return; // ya completado
 
     let modelVersion: string;
     try {
-      const signed = await this.storage.signUrls(submission.photoUrls, 3600);
-      const zipBuffer = await this.buildZip(signed);
-      const zipPath = `training/${orderId}.zip`;
-      await this.storage.uploadBytes(zipPath, zipBuffer, 'application/zip');
-      const [zipUrl] = await this.storage.signUrls([zipPath], 3600);
-
-      const { trainingId } = await this.provider.train(zipUrl);
-      await this.prisma.photoJob.update({ where: { id: job.id }, data: { trainingId } });
-      await this.events.record('photos.training_started', { orderId, trainingId });
-
-      modelVersion = await this.waitForTraining(trainingId);
+      if (job.trainingId) {
+        const st = await this.provider.getTrainingStatus(job.trainingId);
+        if (st.status === 'succeeded' && st.modelVersion) {
+          modelVersion = st.modelVersion; // reanudar en la generación
+        } else if (st.status === 'failed' || st.status === 'canceled') {
+          modelVersion = await this.trainAndWait(orderId, job.id, submission.photoUrls);
+        } else {
+          modelVersion = await this.waitForTraining(job.trainingId); // esperar sin re-entrenar
+        }
+      } else {
+        modelVersion = await this.trainAndWait(orderId, job.id, submission.photoUrls);
+      }
     } catch (err) {
       await this.failJob(job.id, orderId, err, 'entrenamiento');
       return;
     }
 
     await this.runGeneration(orderId, job.id, modelVersion);
+  }
+
+  private async trainAndWait(orderId: string, jobId: string, photoUrls: string[]): Promise<string> {
+    await this.prisma.photoJob.update({ where: { id: jobId }, data: { status: 'TRAINING' } });
+    const signed = await this.storage.signUrls(photoUrls, 3600);
+    const zipBuffer = await this.buildZip(signed);
+    const zipPath = `training/${orderId}.zip`;
+    await this.storage.uploadBytes(zipPath, zipBuffer, 'application/zip');
+    const [zipUrl] = await this.storage.signUrls([zipPath], 3600);
+
+    const { trainingId } = await this.provider.train(zipUrl);
+    await this.prisma.photoJob.update({ where: { id: jobId }, data: { trainingId } });
+    await this.events.record('photos.training_started', { orderId, trainingId });
+    return this.waitForTraining(trainingId);
   }
 
   /**

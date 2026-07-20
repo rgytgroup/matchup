@@ -77,7 +77,7 @@ export class PaymentsController {
       await this.events.record('order.paid', { orderId: order.id });
       await this.pipeline.enqueue(order.id);
       if (order.tier === 'AUDIT_PLUS_PHOTOS') {
-        void this.photos.startJob(order.id).catch(() => undefined);
+        await this.photos.enqueue(order.id);
       }
     } else if (event.type === 'charge.refunded') {
       const charge = event.data.object as Stripe.Charge;

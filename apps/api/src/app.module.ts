@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { BullModule } from '@nestjs/bullmq';
+import IORedis from 'ioredis';
 import { validateEnv } from './config/env';
 import { PrismaModule } from './prisma/prisma.module';
 import { EventsModule } from './common/events/events.module';
@@ -25,6 +28,20 @@ import { HealthController } from './health.controller';
     // Rate limit global: 60 req/min por IP (los endpoints sensibles lo ajustan).
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     ScheduleModule.forRoot(),
+    // Cola durable (BullMQ + Redis): el procesamiento sobrevive a reinicios.
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: new IORedis(config.get<string>('REDIS_URL') ?? 'redis://localhost:6379', {
+          maxRetriesPerRequest: null,
+        }),
+        defaultJobOptions: {
+          removeOnComplete: 100,
+          removeOnFail: 1000,
+          backoff: { type: 'exponential', delay: 5000 },
+        },
+      }),
+    }),
     CleanupModule,
     // Endpoints de desarrollo: solo fuera de producción.
     ...(process.env.NODE_ENV === 'production' ? [] : [DevModule]),
