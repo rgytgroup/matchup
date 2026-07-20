@@ -4,9 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Honest, AI-powered audits for your dating profile. One-time purchase, no subscriptions." />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#FCF8F3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#201823" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>MatchUp — Honest AI dating profile audits</title>
+    <script>
+      (function () {
+        try {
+          var s = localStorage.getItem('mk-theme');
+          if (s === 'light' || s === 'dark') document.documentElement.setAttribute('data-theme', s);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

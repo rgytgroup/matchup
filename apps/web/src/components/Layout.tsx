@@ -1,24 +1,65 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
 
+type Theme = 'light' | 'dark';
+
+/** Aplica y persiste el tema; respeta la preferencia del sistema por defecto. */
+function useTheme(): [Theme | null, () => void] {
+  const [theme, setTheme] = useState<Theme | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('mk-theme') as Theme | null;
+    if (stored === 'light' || stored === 'dark') {
+      document.documentElement.setAttribute('data-theme', stored);
+      setTheme(stored);
+    }
+  }, []);
+
+  function toggle() {
+    const current: Theme =
+      theme ??
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next: Theme = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('mk-theme', next);
+    setTheme(next);
+  }
+
+  return [theme, toggle];
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   const t = useI18n();
+  const [, toggleTheme] = useTheme();
+
   return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900">
-      <header className="border-b border-slate-100">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <Link to="/" className="text-lg font-bold">
+    <div className="flex min-h-screen flex-col">
+      <header className="mk-header">
+        <div className="mk-wrap mk-header-inner">
+          <Link to="/" className="mk-brand">
             {t.common.appName}
+            <span className="dot" aria-hidden="true" />
           </Link>
-          <nav className="flex items-center gap-4 text-sm">
-            <a href="/#pricing" className="hover:underline">
+          <nav className="mk-nav">
+            <a className="link mk-hide-sm" href="/#report">
+              The report
+            </a>
+            <a className="link mk-hide-sm" href="/#pricing">
               {t.nav.pricing}
             </a>
-            <a href="/#faq" className="hover:underline">
+            <a className="link mk-hide-sm" href="/#faq">
               {t.nav.faq}
             </a>
-            <Link to="/start" className="rounded-full bg-slate-900 px-4 py-1.5 text-white">
+            <button
+              type="button"
+              className="mk-theme"
+              onClick={toggleTheme}
+              aria-label="Toggle light or dark theme"
+            >
+              ◐
+            </button>
+            <Link to="/start" className="mk-btn sm">
               {t.nav.startCta}
             </Link>
           </nav>
@@ -27,20 +68,14 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-slate-100 text-sm text-slate-500">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-6">
-          <span>© {new Date().getFullYear()} rgytgroup</span>
-          <div className="flex gap-4">
-            <Link to="/terms" className="hover:underline">
-              Terms
-            </Link>
-            <Link to="/privacy" className="hover:underline">
-              Privacy
-            </Link>
-            <Link to="/refunds" className="hover:underline">
-              Refunds
-            </Link>
-          </div>
+      <footer className="mk-footer">
+        <div className="mk-wrap mk-footer-inner">
+          <span>© {new Date().getFullYear()} rgytgroup · {t.common.appName}</span>
+          <nav>
+            <Link to="/terms">Terms</Link>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/refunds">Refunds</Link>
+          </nav>
         </div>
       </footer>
     </div>
