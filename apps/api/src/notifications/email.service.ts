@@ -35,6 +35,18 @@ export class EmailService {
     });
   }
 
+  async sendRefund(to: string): Promise<void> {
+    await this.getClient().emails.send({
+      from: this.from,
+      to,
+      subject: 'Your MatchUp refund has been processed',
+      html: `
+        <p>Your refund has been processed and should appear on your statement within a few business days.</p>
+        <p>If you have any questions, just reply to this email.</p>
+      `,
+    });
+  }
+
   /** Alerta al admin ante fallos que requieren revisión manual (SPEC §5.3, §6.4). */
   async alertAdmin(subject: string, text: string): Promise<void> {
     const to = this.config.get<string>('ADMIN_ALERT_EMAIL');

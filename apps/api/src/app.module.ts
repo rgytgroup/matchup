@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { validateEnv } from './config/env';
 import { PrismaModule } from './prisma/prisma.module';
 import { EventsModule } from './common/events/events.module';
@@ -15,6 +16,7 @@ import { PhotosModule } from './modules/photos/photos.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { DevModule } from './modules/dev/dev.module';
+import { CleanupModule } from './cleanup/cleanup.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -22,6 +24,8 @@ import { HealthController } from './health.controller';
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     // Rate limit global: 60 req/min por IP (los endpoints sensibles lo ajustan).
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
+    ScheduleModule.forRoot(),
+    CleanupModule,
     // Endpoints de desarrollo: solo fuera de producción.
     ...(process.env.NODE_ENV === 'production' ? [] : [DevModule]),
     PrismaModule,

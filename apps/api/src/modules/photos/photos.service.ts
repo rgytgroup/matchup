@@ -165,6 +165,23 @@ export class PhotosService {
       .catch(() => undefined);
   }
 
+  /** Detiene el job de fotos activo (tras un reembolso): cancela el training y marca FAILED. */
+  async cancelJob(orderId: string): Promise<void> {
+    const job = await this.prisma.photoJob.findUnique({ where: { orderId } });
+    if (!job) return;
+    if (!['TRAINING', 'GENERATING', 'QC'].includes(job.status)) return;
+
+    if (job.trainingId) {
+      try {
+        await this.provider.cancelTraining(job.trainingId);
+      } catch (e) {
+        this.logger.warn(`cancelTraining falló (${orderId}): ${(e as Error).message}`);
+      }
+    }
+    await this.prisma.photoJob.update({ where: { id: job.id }, data: { status: 'FAILED' } });
+    await this.events.record('photos.canceled', { orderId });
+  }
+
   private async waitForTraining(trainingId: string): Promise<string> {
     for (let i = 0; i < MAX_POLLS; i += 1) {
       const { status, modelVersion } = await this.provider.getTrainingStatus(trainingId);

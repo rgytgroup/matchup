@@ -26,4 +26,6 @@ export interface PhotoProvider {
   getTrainingStatus(trainingId: string): Promise<TrainingResult>;
   /** Genera imágenes con el modelo entrenado y un prompt. Devuelve URLs. */
   generate(modelVersion: string, prompt: string): Promise<string[]>;
+  /** Cancela un entrenamiento en curso (p. ej. tras un reembolso). */
+  cancelTraining(trainingId: string): Promise<void>;
 }

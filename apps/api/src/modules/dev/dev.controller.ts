@@ -1,5 +1,6 @@
 import { BadRequestException, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CleanupService } from '../../cleanup/cleanup.service';
 import { AnalysisPipelineService } from '../analysis/analysis-pipeline.service';
 import { PhotosService } from '../photos/photos.service';
 
@@ -13,6 +14,7 @@ export class DevController {
     private readonly pipeline: AnalysisPipelineService,
     private readonly photos: PhotosService,
     private readonly prisma: PrismaService,
+    private readonly cleanup: CleanupService,
   ) {}
 
   /** Dispara el pipeline de análisis para una orden (moderación → análisis → PDF → email). */
@@ -41,5 +43,12 @@ export class DevController {
   @Get('photos/:orderId')
   async photosStatus(@Param('orderId') orderId: string) {
     return this.prisma.photoJob.findUnique({ where: { orderId } });
+  }
+
+  /** Borra las fotos de una orden (prueba manual del cron de retención a 30 días). */
+  @Post('cleanup/:orderId')
+  async cleanupOrder(@Param('orderId') orderId: string) {
+    await this.cleanup.cleanOrder(orderId);
+    return { cleaned: true, orderId };
   }
 }

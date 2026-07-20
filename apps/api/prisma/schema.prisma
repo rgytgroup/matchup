@@ -47,9 +47,10 @@ model Order {
   id              String      @id @default(cuid())
   userId          String
   user            User        @relation(fields: [userId], references: [id])
-  tier            Tier
-  stripeSessionId String?     @unique
-  status          OrderStatus @default(PENDING)
+  tier                  Tier
+  stripeSessionId       String?     @unique
+  stripePaymentIntentId String?     @unique
+  status                OrderStatus @default(PENDING)
   amountUsd       Decimal     @db.Decimal(10, 2)
   createdAt       DateTime    @default(now())
   submission      Submission?

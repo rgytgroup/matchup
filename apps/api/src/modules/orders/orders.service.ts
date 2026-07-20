@@ -27,12 +27,26 @@ export class OrdersService {
     return this.prisma.order.update({ where: { id: orderId }, data: { stripeSessionId } });
   }
 
-  markPaidBySession(stripeSessionId: string) {
-    return this.prisma.order.update({ where: { stripeSessionId }, data: { status: 'PAID' } });
+  markPaidBySession(stripeSessionId: string, paymentIntentId?: string) {
+    return this.prisma.order.update({
+      where: { stripeSessionId },
+      data: { status: 'PAID', stripePaymentIntentId: paymentIntentId },
+    });
   }
 
   markRefunded(orderId: string) {
     return this.prisma.order.update({ where: { id: orderId }, data: { status: 'REFUNDED' } });
+  }
+
+  /** Marca REFUNDED por el payment_intent del reembolso; devuelve la orden (con usuario) o null. */
+  async markRefundedByPaymentIntent(paymentIntentId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { stripePaymentIntentId: paymentIntentId },
+      include: { user: true },
+    });
+    if (!order) return null;
+    await this.prisma.order.update({ where: { id: order.id }, data: { status: 'REFUNDED' } });
+    return order;
   }
 
   findById(id: string) {

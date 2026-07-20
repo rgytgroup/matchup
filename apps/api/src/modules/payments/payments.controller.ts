@@ -18,6 +18,7 @@ import { OrdersService } from '../orders/orders.service';
 import { AnalysisPipelineService } from '../analysis/analysis-pipeline.service';
 import { PhotosService } from '../photos/photos.service';
 import { StripeService } from './stripe.service';
+import { RefundsService } from './refunds.service';
 
 @Controller()
 export class PaymentsController {
@@ -28,6 +29,7 @@ export class PaymentsController {
     private readonly events: EventsService,
     private readonly pipeline: AnalysisPipelineService,
     private readonly photos: PhotosService,
+    private readonly refunds: RefundsService,
   ) {}
 
   /** Crea la sesión de Stripe Checkout para una orden ya existente (SPEC §4.3). */
@@ -69,11 +71,18 @@ export class PaymentsController {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
-      const order = await this.orders.markPaidBySession(session.id);
+      const paymentIntentId =
+        typeof session.payment_intent === 'string' ? session.payment_intent : undefined;
+      const order = await this.orders.markPaidBySession(session.id, paymentIntentId);
       await this.events.record('order.paid', { orderId: order.id });
       await this.pipeline.enqueue(order.id);
       if (order.tier === 'AUDIT_PLUS_PHOTOS') {
         void this.photos.startJob(order.id).catch(() => undefined);
+      }
+    } else if (event.type === 'charge.refunded') {
+      const charge = event.data.object as Stripe.Charge;
+      if (typeof charge.payment_intent === 'string') {
+        await this.refunds.handleRefund(charge.payment_intent);
       }
     }
 

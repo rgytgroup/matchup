@@ -79,6 +79,10 @@ export class ReplicatePhotoProvider implements PhotoProvider {
     }
   }
 
+  async cancelTraining(trainingId: string): Promise<void> {
+    await this.getClient().trainings.cancel(trainingId);
+  }
+
   private parseRef(ref: string): { owner: string; name: string; version: string } {
     const [path, version] = ref.split(':');
     const [owner, name] = (path ?? '').split('/');

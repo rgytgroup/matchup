@@ -91,12 +91,19 @@ export class StorageService {
       .filter((u): u is string => typeof u === 'string');
   }
 
-  /** Borra todas las fotos bajo un prefijo (usado por el cron de borrado a 30 días, SPEC §8). */
-  async deletePrefix(prefix: string): Promise<void> {
+  /**
+   * Borra TODAS las fotos de una orden (subidas + generadas + zip de entrenamiento).
+   * NO toca el PDF del reporte (reports/…), que debe permanecer (SPEC §8).
+   * Usado por el cron de borrado a 30 días.
+   */
+  async deleteOrderPhotos(orderId: string): Promise<void> {
     const client = this.getClient();
-    const { data, error } = await client.storage.from(this.bucket).list(prefix);
-    if (error) throw new Error(`Fallo listando ${prefix}: ${error.message}`);
-    const paths = (data ?? []).map((f) => `${prefix}/${f.name}`);
-    if (paths.length > 0) await client.storage.from(this.bucket).remove(paths);
+    for (const prefix of [`orders/${orderId}`, `orders/${orderId}/generated`]) {
+      const { data } = await client.storage.from(this.bucket).list(prefix);
+      // Solo archivos (las subcarpetas tienen id null en Supabase).
+      const paths = (data ?? []).filter((f) => f.id).map((f) => `${prefix}/${f.name}`);
+      if (paths.length > 0) await client.storage.from(this.bucket).remove(paths);
+    }
+    await client.storage.from(this.bucket).remove([`training/${orderId}.zip`]);
   }
 }
