@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import JSZip from 'jszip';
 import { EventsService } from '../../common/events/events.service';
+import { EmailService } from '../../notifications/email.service';
 import { PromptLoaderService } from '../../prompts/prompt-loader.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../storage/storage.service';
@@ -26,6 +27,7 @@ export class PhotosService {
     private readonly storage: StorageService,
     private readonly analysis: AnalysisService,
     private readonly events: EventsService,
+    private readonly email: EmailService,
   ) {}
 
   /** Pipeline completo: zip → entrenar → esperar → generar → QC. */
@@ -136,9 +138,15 @@ export class PhotosService {
       });
 
       if (persisted.length < MIN_ACCEPTABLE) {
-        // TODO(SPEC §6.4): regenerar una tanda; si sigue mal, alertar al admin.
+        // TODO(SPEC §6.4): regenerar una tanda automáticamente antes de alertar.
         await this.events.record('photos.low_quality', { orderId, accepted: persisted.length });
         this.logger.warn(`PhotoJob ${orderId}: solo ${persisted.length} fotos aceptables (<${MIN_ACCEPTABLE}).`);
+        await this.email
+          .alertAdmin(
+            `MatchUp: fotos de baja calidad (${orderId})`,
+            `Solo ${persisted.length} fotos superaron el QC (<${MIN_ACCEPTABLE}). Requiere revisión manual (SPEC §6.4).`,
+          )
+          .catch(() => undefined);
       }
     } catch (err) {
       await this.failJob(jobId, orderId, err, 'generación');
@@ -149,6 +157,12 @@ export class PhotosService {
     await this.prisma.photoJob.update({ where: { id: jobId }, data: { status: 'FAILED' } });
     await this.events.record('photos.failed', { orderId, fase, error: (err as Error).message });
     this.logger.error(`PhotoJob FAILED en ${fase} (orden ${orderId}): ${(err as Error).message}`);
+    await this.email
+      .alertAdmin(
+        `MatchUp: fotos FAILED (${orderId})`,
+        `Fase: ${fase}\n${(err as Error).stack ?? (err as Error).message}`,
+      )
+      .catch(() => undefined);
   }
 
   private async waitForTraining(trainingId: string): Promise<string> {

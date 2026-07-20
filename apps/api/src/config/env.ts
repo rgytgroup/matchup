@@ -24,6 +24,8 @@ export const envSchema = z.object({
   EMAIL_FROM: z.string().default('MatchUp <onboarding@resend.dev>'),
   SUPABASE_BUCKET: z.string().default('submissions'),
   APP_BASE_URL: z.string().default('http://localhost:5173'),
+  // Orígenes CORS permitidos (coma-separado). Vacío = deriva de APP_BASE_URL + localhost.
+  CORS_ORIGINS: z.string().default(''),
   PORT: z.coerce.number().default(3000),
   ADMIN_ALERT_EMAIL: z.string().default(''),
 });

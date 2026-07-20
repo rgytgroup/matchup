@@ -10,6 +10,7 @@ import {
   type RawBodyRequest,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventsService } from '../../common/events/events.service';
@@ -30,6 +31,7 @@ export class PaymentsController {
   ) {}
 
   /** Crea la sesión de Stripe Checkout para una orden ya existente (SPEC §4.3). */
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('checkout')
   async createCheckout(@Body() body: { orderId?: string }) {
     if (!body?.orderId) throw new BadRequestException('orderId es obligatorio');
@@ -47,6 +49,7 @@ export class PaymentsController {
   }
 
   /** Webhook de Stripe. Idempotente: procesar el mismo evento 2x no duplica efectos (SPEC §8/§9). */
+  @SkipThrottle() // Stripe (servidor-a-servidor) puede reintentar; no lo limitamos.
   @Post('webhooks/stripe')
   @HttpCode(200)
   async handleWebhook(

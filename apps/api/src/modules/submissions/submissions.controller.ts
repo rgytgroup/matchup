@@ -7,6 +7,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { isTierId, UPLOAD_RULES } from '@matchup/shared';
 import { EventsService } from '../../common/events/events.service';
@@ -24,6 +25,7 @@ export class SubmissionsController {
   ) {}
 
   /** Intake (SPEC §4.2): crea orden PENDING, sube fotos y crea la Submission. */
+  @Throttle({ default: { limit: 5, ttl: 60_000 } }) // subida cara: máx 5/min por IP
   @Post()
   @UseInterceptors(FilesInterceptor('photos', UPLOAD_RULES.maxPhotos))
   async create(
