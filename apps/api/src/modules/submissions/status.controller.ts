@@ -17,6 +17,12 @@ export class StatusController {
 
     const report =
       submission.status === 'DONE' ? await this.reports.findBySubmissionId(submission.id) : null;
-    return { status: submission.status, reportSlug: report?.publicSlug ?? null };
+    return {
+      status: submission.status,
+      intakeMode: submission.intakeMode,
+      platform: submission.platform,
+      extractedProfile: submission.extractedProfile ?? null,
+      reportSlug: report?.publicSlug ?? null,
+    };
   }
 }

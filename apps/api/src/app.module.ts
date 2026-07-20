@@ -16,6 +16,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PromptsModule } from './prompts/prompts.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
+import { ExtractionModule } from './modules/extraction/extraction.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
 import { PhotosModule } from './modules/photos/photos.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -55,6 +56,7 @@ import { HealthController } from './health.controller';
     PromptsModule,
     OrdersModule,
     SubmissionsModule,
+    ExtractionModule,
     AnalysisModule,
     PhotosModule,
     ReportsModule,

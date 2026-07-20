@@ -4,6 +4,7 @@ import { REPORT_TARGETS, reportResultSchema, type ReportResult } from '@matchup/
 import { PromptLoaderService } from '../../prompts/prompt-loader.service';
 import { ANALYSIS_PROVIDER, type AnalysisProvider } from './analysis-provider.interface';
 import { moderationResultSchema, type ModerationResult } from './analysis.types';
+import { extractedProfileSchema, type ExtractedProfile } from './extraction.types';
 
 /** Se lanza cuando la salida de IA no pasa la validación tras el reintento (SPEC §5.3). */
 export class AnalysisValidationError extends Error {
@@ -28,6 +29,24 @@ export class AnalysisService {
     @Inject(ANALYSIS_PROVIDER) private readonly provider: AnalysisProvider,
     private readonly prompts: PromptLoaderService,
   ) {}
+
+  /** Extrae el perfil desde screenshots (SPEC §5.0); 1 reintento si el JSON no valida. */
+  async extractFromScreenshots(screenshotUrls: string[]): Promise<ExtractedProfile> {
+    const prompt = this.prompts.load('extraction');
+    let lastError = 'desconocido';
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      const raw = await this.provider.generateReportJson(prompt, screenshotUrls);
+      try {
+        const parsed = extractedProfileSchema.safeParse(this.parseJson(raw));
+        if (parsed.success) return parsed.data;
+        lastError = JSON.stringify(parsed.error.flatten());
+      } catch (e) {
+        lastError = `JSON inválido: ${(e as Error).message}`;
+      }
+      this.logger.warn(`Extracción intento ${attempt}: ${lastError}`);
+    }
+    throw new Error(`La extracción no pasó la validación: ${lastError}`);
+  }
 
   async moderate(photoUrls: string[]): Promise<ModerationResult> {
     const prompt = this.prompts.load('moderation');

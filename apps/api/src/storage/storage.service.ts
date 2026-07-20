@@ -37,22 +37,25 @@ export class StorageService {
     return this.config.get<string>('SUPABASE_BUCKET') ?? 'submissions';
   }
 
-  /** Sube las fotos de una orden y devuelve las rutas (no URLs) guardadas. */
-  async uploadPhotos(orderId: string, files: UploadableFile[]): Promise<string[]> {
-    const client = this.getClient();
+  /** Sube archivos bajo un prefijo y devuelve las rutas guardadas. */
+  async uploadFiles(prefix: string, files: UploadableFile[]): Promise<string[]> {
     const paths: string[] = [];
     for (let i = 0; i < files.length; i += 1) {
       const file = files[i];
       const ext = (file.originalname.split('.').pop() ?? 'jpg').toLowerCase();
-      const path = `orders/${orderId}/${i}.${ext}`;
-      const { error } = await client.storage.from(this.bucket).upload(path, file.buffer, {
-        contentType: file.mimetype,
-        upsert: true,
-      });
-      if (error) throw new Error(`Fallo subiendo ${path}: ${error.message}`);
-      paths.push(path);
+      paths.push(await this.uploadBytes(`${prefix}/${i}.${ext}`, file.buffer, file.mimetype));
     }
     return paths;
+  }
+
+  /** Sube las fotos de una orden y devuelve las rutas (no URLs) guardadas. */
+  uploadPhotos(orderId: string, files: UploadableFile[]): Promise<string[]> {
+    return this.uploadFiles(`orders/${orderId}`, files);
+  }
+
+  /** Sube los screenshots del intake (carpeta aparte para no chocar con las fotos). */
+  uploadScreenshots(orderId: string, files: UploadableFile[]): Promise<string[]> {
+    return this.uploadFiles(`orders/${orderId}/screenshots`, files);
   }
 
   /** Sube el PDF del reporte y devuelve su ruta. */
@@ -98,7 +101,11 @@ export class StorageService {
    */
   async deleteOrderPhotos(orderId: string): Promise<void> {
     const client = this.getClient();
-    for (const prefix of [`orders/${orderId}`, `orders/${orderId}/generated`]) {
+    for (const prefix of [
+      `orders/${orderId}`,
+      `orders/${orderId}/generated`,
+      `orders/${orderId}/screenshots`,
+    ]) {
       const { data } = await client.storage.from(this.bucket).list(prefix);
       // Solo archivos (las subcarpetas tienen id null en Supabase).
       const paths = (data ?? []).filter((f) => f.id).map((f) => `${prefix}/${f.name}`);
