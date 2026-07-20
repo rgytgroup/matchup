@@ -65,6 +65,7 @@ export class AnalysisPipelineService {
         photoUrls: signedUrls,
         bioText: submission.bioText,
         questionnaire: submission.questionnaire,
+        platform: submission.platform ?? undefined,
       });
 
       const report = await this.reports.create(submission.id, result);

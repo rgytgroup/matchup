@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { isTierId, TIERS, UPLOAD_RULES, type TierId } from '@matchup/shared';
+import {
+  isTierId,
+  PLATFORMS,
+  PLATFORM_LABELS,
+  TIERS,
+  UPLOAD_RULES,
+  type Platform,
+  type TierId,
+} from '@matchup/shared';
 import { useI18n } from '../i18n';
 import { Layout } from '../components/Layout';
 import { createSubmission } from '../api';
@@ -17,7 +25,8 @@ export function Start() {
   );
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
-  const [q, setQ] = useState({ goal: '', apps: '', ageRange: '', city: '' });
+  const [platform, setPlatform] = useState<Platform>('hinge');
+  const [q, setQ] = useState({ goal: '', ageRange: '', city: '' });
   const [photos, setPhotos] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -45,6 +54,7 @@ export function Start() {
     form.append('email', email);
     form.append('tier', tier);
     form.append('bioText', bio);
+    form.append('platform', platform);
     form.append('questionnaire', JSON.stringify(q));
     photos.forEach((p) => form.append('photos', p));
 
@@ -100,10 +110,28 @@ export function Start() {
           />
         </div>
 
+        <div className="space-y-2">
+          <span className="text-lg font-semibold">Which app is this profile on?</span>
+          <p className="text-sm text-slate-500">We tailor your rewritten bios and prompts to this platform.</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {PLATFORMS.map((pf) => (
+              <button
+                type="button"
+                key={pf}
+                onClick={() => setPlatform(pf)}
+                className={`rounded-xl border p-3 text-center font-medium ${
+                  platform === pf ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
+                }`}
+              >
+                {PLATFORM_LABELS[pf]}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <fieldset className="space-y-4">
           <legend className="text-lg font-semibold">{t.start.questionnaire}</legend>
           <TextField label="What's your main goal?" value={q.goal} onChange={(v) => setQ({ ...q, goal: v })} />
-          <TextField label="Which apps do you use?" value={q.apps} onChange={(v) => setQ({ ...q, apps: v })} />
           <TextField label="Your age range" value={q.ageRange} onChange={(v) => setQ({ ...q, ageRange: v })} />
           <TextField label="City" value={q.city} onChange={(v) => setQ({ ...q, city: v })} />
         </fieldset>

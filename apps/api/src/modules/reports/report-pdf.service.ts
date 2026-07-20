@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
-import type { ReportResult } from '@matchup/shared';
+import { PLATFORM_LABELS, type ReportResult } from '@matchup/shared';
 
 const INK = '#0f172a';
 const MUTED = '#475569';
@@ -38,6 +38,13 @@ export class ReportPdfService {
 
       doc.font('Helvetica').fontSize(10).fillColor(LIGHT).text('OVERALL SCORE');
       doc.font('Helvetica-Bold').fontSize(38).fillColor(INK).text(`${result.overallScore} / 100`);
+      if (result.platform) {
+        doc
+          .font('Helvetica')
+          .fontSize(11)
+          .fillColor(MUTED)
+          .text(`Optimized for ${PLATFORM_LABELS[result.platform]}`);
+      }
 
       this.section(doc, 'Photo-by-photo');
       result.photos.forEach((p) => {

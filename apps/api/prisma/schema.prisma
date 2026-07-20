@@ -22,9 +22,16 @@ enum OrderStatus {
 
 enum SubmissionStatus {
   UPLOADED
+  EXTRACTING
+  CONFIRMING
   ANALYZING
   DONE
   FAILED
+}
+
+enum IntakeMode {
+  SCREENSHOTS
+  MANUAL
 }
 
 enum PhotoJobStatus {
@@ -58,15 +65,19 @@ model Order {
 }
 
 model Submission {
-  id            String           @id @default(cuid())
-  orderId       String           @unique
-  order         Order            @relation(fields: [orderId], references: [id])
-  questionnaire Json
-  bioText       String
-  photoUrls     String[]
-  status        SubmissionStatus @default(UPLOADED)
-  createdAt     DateTime         @default(now())
-  report        Report?
+  id               String           @id @default(cuid())
+  orderId          String           @unique
+  order            Order            @relation(fields: [orderId], references: [id])
+  intakeMode       IntakeMode       @default(MANUAL)
+  screenshotUrls   String[]         @default([])
+  extractedProfile Json? // §5.0: platform, bioText, prompts[], photoRefs[], confidence
+  platform         String? // plataforma resuelta (detectada o elegida): tinder|hinge|bumble|other
+  questionnaire    Json
+  bioText          String
+  photoUrls        String[]
+  status           SubmissionStatus @default(UPLOADED)
+  createdAt        DateTime         @default(now())
+  report           Report?
 }
 
 model Report {

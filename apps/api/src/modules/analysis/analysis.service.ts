@@ -17,6 +17,7 @@ export interface AnalyzeInput {
   photoUrls: string[];
   bioText: string;
   questionnaire: unknown;
+  platform?: string;
 }
 
 @Injectable()
@@ -40,6 +41,7 @@ export class AnalysisService {
    */
   async analyze(input: AnalyzeInput): Promise<ReportResult> {
     const basePrompt = this.prompts.render('analysis-system', {
+      platform: input.platform ?? 'unknown',
       questionnaire: JSON.stringify(input.questionnaire),
       bioText: input.bioText,
       photoCount: input.photoUrls.length,

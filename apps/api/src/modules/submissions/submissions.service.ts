@@ -11,10 +11,13 @@ export class SubmissionsService {
     questionnaire: Prisma.InputJsonValue;
     bioText: string;
     photoUrls: string[];
+    platform?: string;
   }) {
     return this.prisma.submission.create({
       data: {
         orderId: input.orderId,
+        intakeMode: 'MANUAL',
+        platform: input.platform,
         questionnaire: input.questionnaire,
         bioText: input.bioText,
         photoUrls: input.photoUrls,

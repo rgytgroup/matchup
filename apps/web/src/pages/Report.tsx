@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import type { ReportResult } from '@matchup/shared';
+import { PLATFORM_LABELS, type ReportResult } from '@matchup/shared';
 import { useI18n } from '../i18n';
 import { Layout } from '../components/Layout';
 import { getReport, type PhotosStatus } from '../api';
@@ -63,6 +63,11 @@ export function Report() {
 
         <Card title={t.report.overallScore}>
           <p className="text-4xl font-bold">{r.overallScore}/100</p>
+          {r.platform && (
+            <span className="mt-3 inline-block rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+              Optimized for {PLATFORM_LABELS[r.platform]}
+            </span>
+          )}
         </Card>
 
         <Card title={t.report.photoScores}>

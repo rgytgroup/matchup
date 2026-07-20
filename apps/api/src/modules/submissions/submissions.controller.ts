@@ -9,7 +9,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
-import { isTierId, UPLOAD_RULES } from '@matchup/shared';
+import { isPlatform, isTierId, UPLOAD_RULES } from '@matchup/shared';
 import { EventsService } from '../../common/events/events.service';
 import { StorageService } from '../../storage/storage.service';
 import { OrdersService } from '../orders/orders.service';
@@ -30,7 +30,8 @@ export class SubmissionsController {
   @UseInterceptors(FilesInterceptor('photos', UPLOAD_RULES.maxPhotos))
   async create(
     @UploadedFiles() files: Array<Express.Multer.File> = [],
-    @Body() body: { email?: string; tier?: string; bioText?: string; questionnaire?: string },
+    @Body()
+    body: { email?: string; tier?: string; bioText?: string; questionnaire?: string; platform?: string },
   ) {
     if (!body?.email || !body?.tier || !isTierId(body.tier)) {
       throw new BadRequestException('email y tier válidos son obligatorios');
@@ -38,6 +39,7 @@ export class SubmissionsController {
     this.validateFiles(files);
 
     const questionnaire = this.parseQuestionnaire(body.questionnaire);
+    const platform = body.platform && isPlatform(body.platform) ? body.platform : 'other';
     const order = await this.orders.createPending(body.email, body.tier);
     const paths = await this.storage.uploadPhotos(order.id, files);
     await this.submissions.create({
@@ -45,6 +47,7 @@ export class SubmissionsController {
       questionnaire,
       bioText: body.bioText ?? '',
       photoUrls: paths,
+      platform,
     });
 
     await this.events.record('submission.created', {

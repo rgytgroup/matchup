@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PLATFORMS } from './platforms';
 
 /**
  * Schema del resultado de análisis (SPEC §5).
@@ -23,6 +24,9 @@ export const suggestedPromptSchema = z.object({
 });
 
 export const reportResultSchema = z.object({
+  // Plataforma para la que está optimizado el reporte (SPEC §5.1). Opcional para
+  // tolerar reportes antiguos; el prompt pide incluirla.
+  platform: z.enum(PLATFORMS).optional(),
   overallScore: score,
   photos: z.array(photoAnalysisSchema).min(1),
   missingArchetypes: z.array(z.string()),
