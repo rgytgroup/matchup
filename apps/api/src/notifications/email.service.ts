@@ -54,7 +54,7 @@ export class EmailService {
       subject: 'Your Truly refund has been processed',
       html: `
         <p>Your refund has been processed and should appear on your statement within a few business days.</p>
-        <p>If you have any questions, just reply to this email.</p>
+        <p>If you have any questions, email us at <a href="mailto:hello@truly.dating">hello@truly.dating</a>.</p>
       `,
     });
   }

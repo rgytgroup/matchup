@@ -1,5 +1,5 @@
-# SPEC.md — MatchUp
-> Especificación técnica para Claude Code. Ponla en la raíz del repo. Complementa (no reemplaza) el plan de ejecución semanal.
+# SPEC.md — Truly (truly.dating)
+> Especificación técnica para Claude Code. Ponla en la raíz del repo. Complementa (no reemplaza) el plan de ejecución semanal. (Nombre anterior del proyecto: MatchUp.)
 
 ## 1. Qué es
 Web app de compra única que audita perfiles de citas: el usuario sube fotos + bio, paga, y recibe un reporte con scores, diagnóstico, bios reescritas y plan de acción. Tier premium: 30 fotos generadas con IA a partir de sus fotos.
@@ -23,7 +23,11 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 - `Event`: id, type, meta (Json), createdAt — analítica interna mínima (visita checkout, compra, reembolso).
 
 ## 4. Páginas (frontend)
-1. `/` Landing: promesa, ejemplos de reporte, precios visibles ($14.99 / $34.99), FAQ, CTA.
+1. `/` Landing: promesa, ejemplos de reporte, precios visibles ($14.99 / $34.99), FAQ, CTA. Reglas de la landing:
+   - **Un solo protagonista:** el personaje de ejemplo (hero, sample report y fotos premium) es visiblemente LA MISMA persona con el mismo nombre en toda la página — su historia completa (score inicial → diagnóstico → fotos nuevas) demuestra el producto y la promesa de "tu cara se mantiene".
+   - **Prueba social solo con datos reales:** PROHIBIDO "Most chosen", contadores de clientes, o testimonios inventados mientras no existan datos que los respalden. Alternativas honestas permitidas: "Best value" / "Recommended". Cuando haya datos reales, se actualiza con la verdad.
+   - **"See a sample report" abre un reporte COMPLETO navegable** (la misma vista `/report/[slug]` con datos del protagonista de ejemplo), no un fragmento — es el arma de conversión del escéptico.
+   - **Paridad de especificidad:** el nivel de concreción del sample (scores por foto, "61 → 85", quick wins numerados) es el estándar mínimo del reporte real entregado; un reporte real más vago que el sample = bug de producto.
 2. `/start` Intake **screenshot-first** (diseño mobile-first obsesivo — el 90% del tráfico llega desde el teléfono vía TikTok):
    - **Paso 1 — Camino principal:** "Sube screenshots de tu perfil tal como se ve en tu app" (3–10 capturas desde la galería del teléfono, selector nativo, previews inmediatos). La IA extrae todo sola (ver §5.0). Camino alterno visible pero secundario: "Prefiero ingresarlo manualmente" → upload de 3–8 fotos + pegar bio/prompts + seleccionar plataforma.
    - **Paso 2 — Confirmación de extracción (solo modo screenshots):** pantalla "Esto encontramos en tu perfil" mostrando plataforma detectada, fotos, bio y prompts extraídos, editables con un tap. Genera confianza ("me leyó el perfil") y corrige errores de extracción antes de pagar.
@@ -98,7 +102,9 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 - [ ] PDF descargable idéntico al reporte web.
 - [ ] Webhook de Stripe idempotente (reintento no duplica análisis).
 - [ ] QC de fotos descarta automáticamente bajos parecidos.
-- [ ] Landing con analítica y eventos de conversión (visita→checkout→pago).
+- [ ] Landing con analítica y eventos de conversión (visita→checkout→pago) verificados disparando en producción.
+- [ ] QA completo en teléfono real (no solo responsive del navegador): hero sin romperse, CTAs cómodos al pulgar, carga rápida en red móvil, flujo de subir screenshots desde la galería fluido.
+- [ ] Landing cumple las reglas de §4.1 (protagonista único, cero prueba social inventada, sample report completo navegable).
 - [ ] Lighthouse móvil ≥ 90 en landing.
 
 ## 10. Fuera de alcance v1 (NO construir aunque sea tentador)
