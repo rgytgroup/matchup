@@ -10,6 +10,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { isPlatform, isTierId, UPLOAD_RULES } from '@matchup/shared';
+import { assertNoScreenshots } from '../../common/screenshot-guard';
 import { EventsService } from '../../common/events/events.service';
 import { StorageService } from '../../storage/storage.service';
 import { OrdersService } from '../orders/orders.service';
@@ -37,6 +38,8 @@ export class SubmissionsController {
       throw new BadRequestException('email y tier válidos son obligatorios');
     }
     this.validateFiles(files);
+    // Modo manual = fotos originales para análisis + generación → guardián anti-screenshot (SPEC §6.0).
+    await assertNoScreenshots(files);
 
     const questionnaire = this.parseQuestionnaire(body.questionnaire);
     const platform = body.platform && isPlatform(body.platform) ? body.platform : 'other';

@@ -34,6 +34,7 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
    - **Paso 2 — Confirmación de extracción (solo modo screenshots):** pantalla "Esto encontramos en tu perfil" mostrando plataforma detectada, fotos, bio y prompts extraídos, editables con un tap. Genera confianza ("me leyó el perfil") y corrige errores de extracción antes de pagar.
    - **Paso 3 — Mini-cuestionario (máx. 3 preguntas):** objetivo (relación/casual), rango de edad que busca, ciudad. REGLA: todo campo debe cambiar visiblemente el output; la plataforma NO se pregunta si se detectó del screenshot.
    - **Paso 4 →** checkout.
+   - **Upload de fotos ORIGINALES para generación (tier premium):** este es un flujo DISTINTO del intake de perfil de arriba. Cuando el usuario premium sube las fotos con las que se entrenará el LoRA, aplica el guardián anti-screenshot (§6.0). Aquí un screenshot es basura de entrada; en el intake de perfil (§5.0) un screenshot es lo correcto. No confundir los dos flujos.
 3. `/checkout` → redirige a Stripe Checkout con el tier elegido.
 4. `/report/[slug]` Reporte web (accesible sin login vía slug): score global, score por foto con la foto al lado, diagnóstico de bio, 3 bios nuevas, prompts, plan de 5 pasos, botón "Download PDF". Si tier fotos: galería de fotos aceptadas con descarga.
 5. `/status/[orderId]` Estado del procesamiento (polling): analizando → listo → email enviado. Debe cubrir también los estados de demora/fallo con lenguaje honesto (ver §11.4) y, cuando aplique, el botón "Retry".
@@ -57,6 +58,7 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 4. Mostrar pantalla de confirmación (página §4.2 paso 2); lo confirmado/corregido por el usuario es la fuente de verdad para el análisis.
 5. La extracción corre ANTES del pago (es parte de la magia que convierte); su costo (~$0.02–0.05) se asume como costo de adquisición de quienes no compran.
 6. Guardrail: los screenshots deben ser del PROPIO perfil del usuario ("Mi perfil" / vista de edición). Si la extracción detecta el perfil de un tercero (vista de swipe/match de otra persona) → rechazar con mensaje claro. Nunca analizar perfiles ajenos.
+7. **IMPORTANTE — aquí los screenshots SÍ se esperan.** El guardián anti-screenshot (§6.0) NO aplica a este flujo: el input correcto de §5.0 es precisamente una captura del perfil de la app de citas. El guardián solo protege el upload de fotos originales para generación (§6.0).
 
 ### 5.1 Análisis (post-pago)
 1. Webhook `checkout.session.completed` → marca Order PAID → encola análisis.
@@ -78,10 +80,29 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 - Los prompts de Gemini viven en `/prompts/*.md` versionados en git — NUNCA hardcodeados en el código.
 
 ## 6. Pipeline de fotos (tier premium)
+
+### 6.0 Guardián anti-screenshot (validación de entrada — CRÍTICO para calidad y margen)
+Aprendizaje de producción: entrenar el LoRA con screenshots de la galería (barra de estado, UI de Google Fotos, cara pequeña) produce un modelo débil → baja tasa de aprobados en QC y créditos de Replicate/Gemini quemados en un LoRA inservible. Y los clientes reales subirán screenshots por costumbre igual que le pasó al dueño dos veces.
+- Al subir fotos ORIGINALES para generación (y en el modo MANUAL del §4.2), validar CADA imagen ANTES de aceptarla:
+  - Detectar señales de screenshot: relación de aspecto típica de pantalla de teléfono, barra de estado (hora/batería/señal), elementos de UI (botones, iconos de apps, barras de navegación).
+  - Si parece screenshot → rechazar esa imagen con mensaje amable: "Esto parece una captura de pantalla — sube la foto original desde tu galería para mejores resultados." Permitir reintentar con el archivo correcto.
+- La validación ocurre en el UPLOAD, antes de entrenar nada — nunca se entrena un LoRA con imágenes rechazadas. Esto protege la calidad Y los créditos.
+- ALCANCE: aplica SOLO a fotos originales para generación y al modo manual. NO aplica al intake de perfil de §5.0, donde el screenshot es el input correcto (ver §5.0.7).
+
+### 6.1 Generación
 1. Entrenar LoRA con las fotos del usuario (Replicate). Guardar trainingId y costo.
 2. Generar 40–60 imágenes en 6–8 escenarios (plantillas de prompt en `/prompts/photo-scenarios.md`).
-3. QC automático: pase de visión que puntúa parecido facial vs fotos originales; descartar < umbral; entregar las 30 mejores. Guardar las urls ya puntuadas en `PhotoJob.qcScoredUrls` para poder reanudar sin re-puntuar (ver §11).
+
+### 6.2 QC automático
+3. Pase de visión que puntúa parecido facial vs fotos originales; descartar < umbral; entregar las 30 mejores. Guardar las urls ya puntuadas en `PhotoJob.qcScoredUrls` para poder reanudar sin re-puntuar (ver §11).
 4. Si tras QC hay <20 aceptables → regenerar una tanda; si sigue mal → email al admin para revisión manual (no entregar basura).
+
+### 6.3 Reglas del QC de parecido (afinamiento — evitar falsos positivos)
+Aprendizaje de producción: el QC dejó pasar una foto de grupo sin protagonista claro (falso positivo). El QC no solo mide "parecido", primero valida que la imagen sea utilizable como foto de perfil individual:
+- Rechazar SIEMPRE (antes de puntuar parecido): imágenes con más de una persona prominente / sin un rostro individual claro y dominante; rostro no reconocible (contraluz fuerte, muy pequeño, cortado, de espaldas); artefactos de IA evidentes (manos/orejas/dientes deformes, rasgos derretidos).
+- Solo tras pasar ese filtro se puntúa el parecido facial vs las fotos originales.
+- El umbral de parecido y el prompt de QC viven en `/prompts/photo-scenarios.md` (o archivo QC dedicado), versionados — ajustables sin tocar código.
+
 - **Costo/consumo:** el QC llama a Gemini una vez por imagen candidata (~40–80 llamadas por orden premium, además del análisis). Es el mayor consumidor de créditos Gemini del sistema. Vigilar (ver §11.5) y, cuando convenga, optimizar (puntuar en lote, o usar un modelo más barato para el QC de parecido).
 
 ## 7. Variables de entorno
@@ -93,6 +114,7 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 - Reembolso: botón/email simple; marcar REFUNDED y detener cualquier job activo.
 - Nunca generar fotos que alteren rasgos físicos (etnia, cuerpo, edad); los escenarios cambian contexto/ropa/luz, no la persona.
 - Rechazar submissions con fotos de menores o de terceros evidentes (pase de moderación con visión antes de analizar).
+- No entrenar LoRA con screenshots (ver §6.0): protege calidad del producto y créditos.
 - Todo texto de salida al usuario pasa por el idioma del archivo i18n.
 - **Regla de oro de entrega (ver §11):** un `Order` en estado PAID SIEMPRE termina en el entregable pagado (reporte, y fotos si es premium), cueste los reintentos que cueste. El cliente NUNCA re-paga por un fallo nuestro y NUNCA queda en un limbo sin respuesta.
 
@@ -104,7 +126,9 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 - [ ] Reporte JSON válido en ≥95% de submissions reales de prueba (20 perfiles).
 - [ ] PDF descargable idéntico al reporte web.
 - [ ] Webhook de Stripe idempotente (reintento no duplica análisis).
-- [ ] QC de fotos descarta automáticamente bajos parecidos.
+- [ ] Guardián anti-screenshot (§6.0): rechaza screenshots en el upload de fotos originales/modo manual; NO se dispara en el intake de perfil de §5.0.
+- [ ] QC de fotos: rechaza fotos de grupo/sin rostro individual claro (§6.3) antes de puntuar parecido, y descarta bajos parecidos.
+- [ ] Generación premium con fotos reales (no screenshots): ≥20 de ~60 aceptadas en QC, y validación visual humana de que ≥8–10 son usables sin dudar (define si el tier $34.99 se lanza).
 - [x] Recuperación de fallos (§11): un Order PAID que falla en análisis o fotos se recupera vía reintento automático idempotente, botón "Retry" del cliente o re-encolado admin, SIN re-cobro y SIN re-entrenar el LoRA; reanuda desde el último paso exitoso. Verificado en prod: reintento auto 3x → NEEDS_ATTENTION con retryCount/lastError; botón Retry re-encola solo lo pendiente (`actions:["photos"]`), conserva el trainingId. (Pendiente §11.5: alerta de presupuesto en Google Cloud para no volver a agotar créditos Gemini en silencio.)
 - [x] Landing con analítica y eventos de conversión (visita→checkout→pago) verificados disparando en producción.
 - [ ] QA completo en teléfono real (no solo responsive del navegador): hero sin romperse, CTAs cómodos al pulgar, carga rápida en red móvil, flujo de subir screenshots desde la galería fluido.
@@ -136,4 +160,8 @@ Todo job de recuperación reanuda desde el último paso exitoso; nunca reinicia 
 
 ### 11.5 Guardas de billing (causa raíz del primer fallo real)
 - Configurar alerta de presupuesto en Google Cloud/AI Studio que avise por correo al bajar de un umbral de créditos Gemini. Nunca enterarse del saldo agotado por un cliente.
+- Configurar auto-reload CON TOPE mensual en Replicate y Gemini: nunca se agota a mitad de una orden real, pero un bug o abuso no vacía la tarjeta.
 - Vigilar el consumo del QC de fotos (§6): es el mayor gasto de Gemini por orden. Registrar `PhotoJob.costUsd` real por orden para detectar desviaciones.
+
+### 11.6 Economía unitaria verificada (julio 2026, datos reales de prueba)
+Costo por orden PREMIUM ($34.99): Gemini ~$0.70 + Replicate ~$0.70 + Stripe ~$1.31 = ~$2.71 → margen bruto ~92%. Orden AUDIT ($14.99): ~$1.05 → margen ~93%. El modelo cuadra con holgura; el QC de fotos es la palanca de optimización si algún día el volumen aprieta (no antes).

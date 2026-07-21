@@ -85,13 +85,23 @@ export function Confirm() {
     };
   }, [orderId]);
 
-  function onFiles(list: FileList | null) {
+  async function onFiles(list: FileList | null) {
     if (!list) return;
     const files = Array.from(list);
     const tooBig = files.find((f) => f.size > UPLOAD_RULES.maxBytesPerPhoto);
     if (tooBig) {
       setError(`"${tooBig.name}" supera el tamaño máximo permitido.`);
       return;
+    }
+    // Guardián anti-screenshot (SPEC §6.0): estas son las fotos ORIGINALES para el análisis
+    // y el LoRA — un screenshot arruina la calidad. Chequeo instantáneo en el cliente.
+    for (const f of files) {
+      if (await looksLikeScreenshot(f)) {
+        setError(
+          `"${f.name}" looks like a screenshot. Upload the original photo from your gallery — not a screenshot — for the best results.`,
+        );
+        return;
+      }
     }
     setError(null);
     setPhotos(files.slice(0, UPLOAD_RULES.maxPhotos));
@@ -256,6 +266,24 @@ export function Confirm() {
       </form>
     </Layout>
   );
+}
+
+/** ¿La imagen tiene proporción de captura de pantalla de teléfono? (SPEC §6.0) */
+function looksLikeScreenshot(file: File): Promise<boolean> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const ratio = Math.max(img.width, img.height) / Math.min(img.width, img.height);
+      resolve(ratio >= 1.85);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(false);
+    };
+    img.src = url;
+  });
 }
 
 function TextField({

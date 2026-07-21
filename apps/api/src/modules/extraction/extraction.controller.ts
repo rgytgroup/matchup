@@ -10,6 +10,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { isTierId, UPLOAD_RULES } from '@matchup/shared';
+import { assertNoScreenshots } from '../../common/screenshot-guard';
 import { ExtractionPipelineService } from './extraction-pipeline.service';
 
 @Controller('submissions')
@@ -67,6 +68,9 @@ export class ExtractionController {
         throw new BadRequestException(`"${f.originalname}" supera el tamaño máximo`);
       }
     }
+    // Guardián anti-screenshot (SPEC §6.0): estas son las fotos ORIGINALES que
+    // entrenan el LoRA y se analizan — un screenshot aquí arruina la calidad.
+    await assertNoScreenshots(files);
     return this.extraction.confirm(
       orderId,
       {
