@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Layout } from '../components/Layout';
 
-const CONTACT = 'soporte@truly.dating';
+const CONTACT = 'support@truly.dating';
 const UPDATED = 'July 2026';
 
 function LegalPage({ title, children }: { title: string; children: ReactNode }) {
