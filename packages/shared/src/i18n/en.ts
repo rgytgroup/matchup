@@ -72,7 +72,7 @@ export const en = {
     title: 'One payment. Pick your depth.',
     intro: 'No subscriptions, no upsells, no fake countdown timers. Ever.',
     oneTime: 'one-time',
-    ribbon: 'Most chosen',
+    ribbon: 'Best value',
     audit: 'Profile Audit',
     auditDesc:
       'We analyze the photos and bio you use today and give you scores, a diagnosis, 3 rewritten bios, prompt ideas, and a 5-step action plan.',
