@@ -52,9 +52,9 @@ export function Landing() {
               <Link className="mk-btn" to="/start">
                 {t.landing.heroCta} — ${audit}
               </Link>
-              <a className="mk-btn ghost" href="#report">
+              <Link className="mk-btn ghost" to="/sample">
                 {t.landing.sampleCta}
-              </a>
+              </Link>
             </div>
             <p className="mk-micro">
               One-time purchase · <b>7-day refund</b> · photos deleted after 30 days.
@@ -106,6 +106,7 @@ export function Landing() {
           <div className="mk-report">
             <div className="aside">
               <span className="mk-stamp">Sample report</span>
+              <div style={{ fontWeight: 700, marginTop: '-.6rem' }}>Mateo, 34 · Tinder</div>
               <div className="mk-scorewrap">
                 <div className="mk-ring2">
                   <svg viewBox="0 0 96 96" aria-hidden="true">
@@ -165,6 +166,11 @@ export function Landing() {
                 </ol>
               </div>
             </div>
+          </div>
+          <div className="mk-report-more">
+            <Link className="mk-btn ghost" to="/sample">
+              See Mateo&apos;s full report →
+            </Link>
           </div>
         </div>
       </section>

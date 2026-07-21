@@ -102,9 +102,9 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 - [ ] PDF descargable idéntico al reporte web.
 - [ ] Webhook de Stripe idempotente (reintento no duplica análisis).
 - [ ] QC de fotos descarta automáticamente bajos parecidos.
-- [ ] Landing con analítica y eventos de conversión (visita→checkout→pago) verificados disparando en producción.
+- [x] Landing con analítica y eventos de conversión (visita→checkout→pago) verificados disparando en producción.
 - [ ] QA completo en teléfono real (no solo responsive del navegador): hero sin romperse, CTAs cómodos al pulgar, carga rápida en red móvil, flujo de subir screenshots desde la galería fluido.
-- [ ] Landing cumple las reglas de §4.1 (protagonista único, cero prueba social inventada, sample report completo navegable).
+- [x] Landing cumple las reglas de §4.1 (protagonista único, cero prueba social inventada, sample report completo navegable). Sample report completo en `/sample` (mismo `ReportView` que el reporte real → paridad garantizada); protagonista único "Mateo" en héroe, sample y fotos premium; ribbon "Best value" (sin prueba social inventada).
 - [ ] Lighthouse móvil ≥ 90 en landing.
 
 ## 10. Fuera de alcance v1 (NO construir aunque sea tentador)
