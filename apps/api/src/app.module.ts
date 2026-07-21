@@ -21,6 +21,7 @@ import { AnalysisModule } from './modules/analysis/analysis.module';
 import { PhotosModule } from './modules/photos/photos.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { RecoveryModule } from './modules/recovery/recovery.module';
 import { DevModule } from './modules/dev/dev.module';
 import { CleanupModule } from './cleanup/cleanup.module';
 import { HealthController } from './health.controller';
@@ -61,6 +62,7 @@ import { HealthController } from './health.controller';
     PhotosModule,
     ReportsModule,
     PaymentsModule,
+    RecoveryModule,
   ],
   controllers: [HealthController],
   providers: [

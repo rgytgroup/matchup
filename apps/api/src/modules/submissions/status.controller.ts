@@ -1,4 +1,5 @@
 import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { ReportsService } from '../reports/reports.service';
 import { SubmissionsService } from './submissions.service';
 
@@ -8,6 +9,7 @@ export class StatusController {
   constructor(
     private readonly submissions: SubmissionsService,
     private readonly reports: ReportsService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Get(':orderId')
@@ -17,12 +19,20 @@ export class StatusController {
 
     const report =
       submission.status === 'DONE' ? await this.reports.findBySubmissionId(submission.id) : null;
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { photoJob: true },
+    });
+
     return {
       status: submission.status,
       intakeMode: submission.intakeMode,
       platform: submission.platform,
       extractedProfile: submission.extractedProfile ?? null,
       reportSlug: report?.publicSlug ?? null,
+      tier: order?.tier ?? null,
+      // Estado del job de fotos (solo aplica al tier premium); null si no existe aún.
+      photosJobStatus: order?.photoJob?.status ?? null,
     };
   }
 }

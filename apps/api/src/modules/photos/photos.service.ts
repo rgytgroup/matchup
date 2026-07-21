@@ -10,6 +10,7 @@ import { EmailService } from '../../notifications/email.service';
 import { PromptLoaderService } from '../../prompts/prompt-loader.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../storage/storage.service';
+import { isTransientError, MAX_PIPELINE_ATTEMPTS, RETRY_BACKOFF_MS } from '../../common/retry.util';
 import { AnalysisService } from '../analysis/analysis.service';
 import { PHOTO_PROVIDER, TRIGGER_WORD, type PhotoProvider } from './photo-provider.interface';
 
@@ -21,7 +22,7 @@ const POLL_INTERVAL_MS = 15_000;
 const MAX_POLLS = 160; // ~40 min
 const GEN_SPACING_MS = 2_000; // pausa entre generaciones (gentil con el rate limit)
 
-/** Pipeline de fotos del tier premium (SPEC §6). */
+/** Pipeline de fotos del tier premium (SPEC §6). Recuperación de fallos: SPEC §11. */
 @Injectable()
 export class PhotosService {
   private readonly logger = new Logger(PhotosService.name);
@@ -38,17 +39,29 @@ export class PhotosService {
     @InjectQueue(PHOTOS_QUEUE) private readonly queue: Queue,
   ) {}
 
-  /** Encola el job de fotos en la cola durable (BullMQ). */
+  /** Encola el job de fotos en la cola durable con reintentos + backoff (SPEC §11.3). */
   async enqueue(orderId: string): Promise<void> {
-    await this.queue.add('generate', { orderId }, { attempts: 2, jobId: `photos-${orderId}` });
+    const jobId = `photos-${orderId}`;
+    await this.queue.remove(jobId).catch(() => undefined);
+    await this.queue.add(
+      'generate',
+      { orderId },
+      {
+        jobId,
+        attempts: MAX_PIPELINE_ATTEMPTS,
+        backoff: { type: 'exponential', delay: RETRY_BACKOFF_MS },
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    );
   }
 
   /**
    * Pipeline completo: zip → entrenar → esperar → generar → QC.
-   * Reanudable: si ya hay un entrenamiento (en curso o terminado), NO re-entrena
-   * (clave para que un reintento tras reinicio no vuelva a pagar el entrenamiento).
+   * Reanudable (SPEC §11.2): si ya hay un entrenamiento (en curso o terminado), NO re-entrena
+   * (lo caro); la generación reanuda desde las fotos ya aceptadas y persistidas.
    */
-  async startJob(orderId: string): Promise<void> {
+  async startJob(orderId: string, isLastAttempt = true): Promise<void> {
     const submission = await this.prisma.submission.findUnique({ where: { orderId } });
     if (!submission) {
       this.logger.warn(`startJob: sin submission para la orden ${orderId}`);
@@ -77,11 +90,11 @@ export class PhotosService {
         modelVersion = await this.trainAndWait(orderId, job.id, submission.photoUrls);
       }
     } catch (err) {
-      await this.failJob(job.id, orderId, err, 'entrenamiento');
+      await this.handleFailure(job.id, orderId, err, isLastAttempt, 'entrenamiento');
       return;
     }
 
-    await this.runGeneration(orderId, job.id, modelVersion);
+    await this.runGeneration(orderId, job.id, modelVersion, isLastAttempt);
   }
 
   private async trainAndWait(orderId: string, jobId: string, photoUrls: string[]): Promise<string> {
@@ -98,27 +111,24 @@ export class PhotosService {
     return this.waitForTraining(trainingId);
   }
 
-  /**
-   * Reanuda solo la generación + QC con un modelo YA entrenado (sin re-entrenar).
-   * Útil cuando el entrenamiento salió bien pero la generación falló (p. ej. rate limit).
-   */
-  async resumeGeneration(orderId: string, modelVersion: string): Promise<void> {
+  /** Reanuda solo la generación + QC con un modelo YA entrenado (sin re-entrenar). */
+  async resumeGeneration(orderId: string, modelVersion: string, isLastAttempt = true): Promise<void> {
     const job = await this.prisma.photoJob.upsert({
       where: { orderId },
       update: { status: 'GENERATING' },
-      create: {
-        orderId,
-        provider: 'replicate',
-        status: 'GENERATING',
-        outputUrls: [],
-        acceptedUrls: [],
-      },
+      create: { orderId, provider: 'replicate', status: 'GENERATING', outputUrls: [], acceptedUrls: [] },
     });
-    await this.runGeneration(orderId, job.id, modelVersion);
+    await this.runGeneration(orderId, job.id, modelVersion, isLastAttempt);
   }
 
-  private async runGeneration(orderId: string, jobId: string, modelVersion: string): Promise<void> {
+  private async runGeneration(
+    orderId: string,
+    jobId: string,
+    modelVersion: string,
+    isLastAttempt: boolean,
+  ): Promise<void> {
     try {
+      const job = await this.prisma.photoJob.findUnique({ where: { id: jobId } });
       const submission = await this.prisma.submission.findUnique({ where: { orderId } });
       if (!submission) throw new Error(`sin submission para ${orderId}`);
       const signed = await this.storage.signUrls(submission.photoUrls, 3600);
@@ -128,63 +138,78 @@ export class PhotosService {
       await this.prisma.photoJob.update({ where: { id: jobId }, data: { status: 'GENERATING' } });
 
       const scenarios = this.parseScenarios(this.prompts.load('photo-scenarios'));
-      const accepted: string[] = []; // URLs temporales de Replicate que pasaron el QC
-      const allOutputs: string[] = [];
+      // Reanudación (SPEC §11.2): partimos de lo YA aceptado y persistido (URLs durables).
+      const persisted: string[] = [...(job?.acceptedUrls ?? [])];
+      const allOutputs: string[] = [...(job?.outputUrls ?? [])];
+      const scored = new Set<string>(Array.isArray(job?.qcScoredUrls) ? (job!.qcScoredUrls as string[]) : []);
 
-      // Genera y hace QC por tandas. Si quedan pocas (<20), regenera otra tanda (SPEC §6.4).
-      for (let round = 0; round < MAX_GEN_ROUNDS && accepted.length < TARGET_PHOTOS; round += 1) {
+      if (persisted.length >= TARGET_PHOTOS) {
+        await this.finishGeneration(jobId, orderId, persisted, allOutputs);
+        return;
+      }
+
+      for (let round = 0; round < MAX_GEN_ROUNDS && persisted.length < TARGET_PHOTOS; round += 1) {
         for (const prompt of scenarios) {
-          if (accepted.length >= TARGET_PHOTOS) break;
+          if (persisted.length >= TARGET_PHOTOS) break;
           const urls = await this.provider.generate(modelVersion, prompt);
           allOutputs.push(...urls);
           for (const url of urls) {
+            if (persisted.length >= TARGET_PHOTOS) break;
+            if (scored.has(url)) continue;
             const score = await this.analysis.scoreSimilarity(reference, url);
-            if (score >= threshold) accepted.push(url);
+            scored.add(url);
+            if (score >= threshold) {
+              try {
+                // Persistir de inmediato (Supabase, durable) para poder reanudar sin re-generar.
+                const p = await this.storage.uploadFromUrl(
+                  `orders/${orderId}/generated/${persisted.length}.jpg`,
+                  url,
+                );
+                persisted.push(p);
+                await this.prisma.photoJob.update({
+                  where: { id: jobId },
+                  data: { acceptedUrls: persisted, outputUrls: allOutputs, qcScoredUrls: [...scored], status: 'QC' },
+                });
+              } catch (e) {
+                this.logger.warn(`No se pudo persistir una foto (${orderId}): ${(e as Error).message}`);
+              }
+            }
           }
           await this.sleep(GEN_SPACING_MS);
         }
-        if (accepted.length >= MIN_ACCEPTABLE) break;
+        if (persisted.length >= MIN_ACCEPTABLE) break;
       }
 
-      await this.prisma.photoJob.update({
-        where: { id: jobId },
-        data: { outputUrls: allOutputs, status: 'QC' },
-      });
-
-      // Persistir las aceptadas en Supabase (las URLs de Replicate expiran ~1h).
-      const persisted: string[] = [];
-      for (const [i, url] of accepted.slice(0, TARGET_PHOTOS).entries()) {
-        try {
-          persisted.push(await this.storage.uploadFromUrl(`orders/${orderId}/generated/${i}.jpg`, url));
-        } catch (e) {
-          this.logger.warn(`No se pudo persistir la foto ${i} (${orderId}): ${(e as Error).message}`);
-        }
-      }
-
-      await this.prisma.photoJob.update({
-        where: { id: jobId },
-        data: { acceptedUrls: persisted, status: 'DONE' },
-      });
-      await this.events.record('photos.done', {
-        orderId,
-        generated: allOutputs.length,
-        accepted: persisted.length,
-      });
-
-      if (persisted.length < MIN_ACCEPTABLE) {
-        await this.events.record('photos.low_quality', { orderId, accepted: persisted.length });
-        this.logger.warn(`PhotoJob ${orderId}: solo ${persisted.length} fotos aceptables (<${MIN_ACCEPTABLE}).`);
-        await this.email
-          .alertAdmin(
-            `MatchUp: fotos de baja calidad (${orderId})`,
-            `Solo ${persisted.length} fotos superaron el QC (<${MIN_ACCEPTABLE}) tras ${MAX_GEN_ROUNDS} tandas. Requiere revisión manual (SPEC §6.4).`,
-          )
-          .catch(() => undefined);
-      } else {
-        await this.notifyPhotosReady(orderId, persisted.length);
-      }
+      await this.finishGeneration(jobId, orderId, persisted, allOutputs);
     } catch (err) {
-      await this.failJob(jobId, orderId, err, 'generación');
+      await this.handleFailure(jobId, orderId, err, isLastAttempt, 'generación');
+    }
+  }
+
+  private async finishGeneration(
+    jobId: string,
+    orderId: string,
+    persisted: string[],
+    allOutputs: string[],
+  ): Promise<void> {
+    const accepted = persisted.slice(0, TARGET_PHOTOS);
+    await this.prisma.photoJob.update({
+      where: { id: jobId },
+      data: { acceptedUrls: accepted, outputUrls: allOutputs, status: 'DONE' },
+    });
+    await this.events.record('photos.done', { orderId, generated: allOutputs.length, accepted: accepted.length });
+
+    if (accepted.length < MIN_ACCEPTABLE) {
+      await this.events.record('photos.low_quality', { orderId, accepted: accepted.length });
+      this.logger.warn(`PhotoJob ${orderId}: solo ${accepted.length} fotos aceptables (<${MIN_ACCEPTABLE}).`);
+      await this.email
+        .alertAdmin(
+          `Truly: fotos de baja calidad (${orderId})`,
+          `Solo ${accepted.length} fotos superaron el QC (<${MIN_ACCEPTABLE}) tras ${MAX_GEN_ROUNDS} tandas. Requiere revisión manual (SPEC §6.4).`,
+        )
+        .catch(() => undefined);
+    } else {
+      await this.notifyPhotosReady(orderId, accepted.length);
     }
   }
 
@@ -207,15 +232,33 @@ export class PhotosService {
     await this.events.record('photos.email_sent', { orderId, count });
   }
 
-  private async failJob(jobId: string, orderId: string, err: unknown, fase: string): Promise<void> {
+  /** Reintento (transitorio + quedan intentos) o NEEDS_ATTENTION (agotado/estructural). SPEC §11.3. */
+  private async handleFailure(
+    jobId: string,
+    orderId: string,
+    err: unknown,
+    isLastAttempt: boolean,
+    fase: string,
+  ): Promise<void> {
+    const message = (err as Error).message ?? String(err);
+    await this.prisma.photoJob.update({
+      where: { id: jobId },
+      data: { retryCount: { increment: 1 }, lastError: message.slice(0, 1000) },
+    });
     Sentry.captureException(err, { extra: { orderId, phase: `photos:${fase}` } });
-    await this.prisma.photoJob.update({ where: { id: jobId }, data: { status: 'FAILED' } });
-    await this.events.record('photos.failed', { orderId, fase, error: (err as Error).message });
-    this.logger.error(`PhotoJob FAILED en ${fase} (orden ${orderId}): ${(err as Error).message}`);
+
+    if (isTransientError(err) && !isLastAttempt) {
+      this.logger.warn(`Fotos transitorio (${fase}, orden ${orderId}), reintentará: ${message}`);
+      throw err; // BullMQ reintenta; el entrenamiento/generación reanudan (§11.2).
+    }
+
+    await this.prisma.photoJob.update({ where: { id: jobId }, data: { status: 'NEEDS_ATTENTION' } });
+    await this.events.record('photos.needs_attention', { orderId, fase, error: message });
+    this.logger.error(`PhotoJob NEEDS_ATTENTION en ${fase} (orden ${orderId}): ${message}`);
     await this.email
       .alertAdmin(
-        `MatchUp: fotos FAILED (${orderId})`,
-        `Fase: ${fase}\n${(err as Error).stack ?? (err as Error).message}`,
+        `Truly: fotos requieren atención (${orderId})`,
+        `Fase: ${fase} · tras ${MAX_PIPELINE_ATTEMPTS} intentos\n${(err as Error).stack ?? message}`,
       )
       .catch(() => undefined);
   }
@@ -224,7 +267,7 @@ export class PhotosService {
   async cancelJob(orderId: string): Promise<void> {
     const job = await this.prisma.photoJob.findUnique({ where: { orderId } });
     if (!job) return;
-    if (!['TRAINING', 'GENERATING', 'QC'].includes(job.status)) return;
+    if (!['TRAINING', 'GENERATING', 'QC', 'NEEDS_ATTENTION'].includes(job.status)) return;
 
     if (job.trainingId) {
       try {

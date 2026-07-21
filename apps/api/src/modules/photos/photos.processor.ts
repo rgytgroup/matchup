@@ -14,7 +14,11 @@ export class PhotosProcessor extends WorkerHost {
   }
 
   async process(job: Job<{ orderId: string }>): Promise<void> {
-    this.logger.log(`Procesando fotos de la orden ${job.data.orderId}`);
-    await this.photos.startJob(job.data.orderId);
+    const maxAttempts = job.opts.attempts ?? 1;
+    const isLastAttempt = job.attemptsMade + 1 >= maxAttempts;
+    this.logger.log(
+      `Procesando fotos de la orden ${job.data.orderId} (intento ${job.attemptsMade + 1}/${maxAttempts})`,
+    );
+    await this.photos.startJob(job.data.orderId, isLastAttempt);
   }
 }

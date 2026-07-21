@@ -29,6 +29,22 @@ export class SubmissionsService {
     return this.prisma.submission.update({ where: { id }, data: { status } });
   }
 
+  /** Registra un fallo del pipeline (SPEC §11.3): +1 retryCount y guarda el último error. */
+  recordError(id: string, message: string) {
+    return this.prisma.submission.update({
+      where: { id },
+      data: { retryCount: { increment: 1 }, lastError: message.slice(0, 1000) },
+    });
+  }
+
+  /** Limpia el estado de fallo antes de un reintento asistido (SPEC §11.4). */
+  resetForRetry(id: string) {
+    return this.prisma.submission.update({
+      where: { id },
+      data: { retryCount: 0, lastError: null },
+    });
+  }
+
   findByOrderId(orderId: string) {
     return this.prisma.submission.findUnique({ where: { orderId } });
   }

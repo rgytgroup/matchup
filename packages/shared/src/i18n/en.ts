@@ -148,8 +148,22 @@ export const en = {
   },
   status: {
     analyzing: 'Analyzing your profile…',
+    analyzingHint: 'This usually takes under a minute.',
     ready: 'Your report is ready',
     emailSent: "We've emailed you the link.",
+    viewReport: 'View report',
+    needsAttentionTitle: "We're finishing your report",
+    needsAttentionBody:
+      "This one is taking longer than usual. We've been notified and we're on it — you can try again now, or we'll email you the moment it's ready.",
+    photosGeneratingTitle: 'Report ready — your photos are still cooking',
+    photosGeneratingBody:
+      "Your 30 AI photos take about 20–30 minutes. We'll email you the moment they're ready; your report is available now.",
+    photosSnagTitle: 'Report ready — your photos hit a snag',
+    photosSnagBody:
+      "We couldn't finish your AI photos on the first try. We've been notified — you can retry now at no extra charge.",
+    retry: 'Try again',
+    retrying: 'Restarting…',
+    retryQueued: "On it — we'll email you the moment it's ready.",
   },
 } as const;
 

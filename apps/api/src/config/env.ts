@@ -22,6 +22,8 @@ export const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
   RESEND_API_KEY: z.string().default(''),
   EMAIL_FROM: z.string().default('Truly <onboarding@resend.dev>'),
+  // Token para el endpoint de admin de re-disparo de órdenes (SPEC §11.4).
+  ADMIN_TOKEN: z.string().default(''),
   SUPABASE_BUCKET: z.string().default('submissions'),
   // QC de fotos: umbral de parecido (0-100) para aceptar una foto generada.
   PHOTO_QC_THRESHOLD: z.coerce.number().default(70),

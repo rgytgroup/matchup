@@ -68,8 +68,15 @@ export async function getStatus(orderId: string): Promise<{
   platform: string | null;
   extractedProfile: ExtractedProfile | null;
   reportSlug: string | null;
+  tier: string | null;
+  photosJobStatus: string | null;
 }> {
   return parse(await fetch(`${API_URL}/status/${orderId}`));
+}
+
+/** Reintento asistido del cliente (SPEC §11.4): re-encola lo que falló, sin re-cobro. */
+export async function retryOrder(orderId: string): Promise<{ ok: boolean; actions: string[] }> {
+  return parse(await fetch(`${API_URL}/orders/${orderId}/retry`, { method: 'POST' }));
 }
 
 export type PhotosStatus = 'NONE' | 'PROCESSING' | 'READY' | 'FAILED';
