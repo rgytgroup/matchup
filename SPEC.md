@@ -105,7 +105,7 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 - [ ] PDF descargable idéntico al reporte web.
 - [ ] Webhook de Stripe idempotente (reintento no duplica análisis).
 - [ ] QC de fotos descarta automáticamente bajos parecidos.
-- [ ] Recuperación de fallos (§11): un Order PAID que falla en análisis o fotos se recupera vía reintento automático idempotente, botón "Retry" del cliente o re-encolado admin, SIN re-cobro y SIN re-entrenar el LoRA; reanuda desde el último paso exitoso.
+- [x] Recuperación de fallos (§11): un Order PAID que falla en análisis o fotos se recupera vía reintento automático idempotente, botón "Retry" del cliente o re-encolado admin, SIN re-cobro y SIN re-entrenar el LoRA; reanuda desde el último paso exitoso. Verificado en prod: reintento auto 3x → NEEDS_ATTENTION con retryCount/lastError; botón Retry re-encola solo lo pendiente (`actions:["photos"]`), conserva el trainingId. (Pendiente §11.5: alerta de presupuesto en Google Cloud para no volver a agotar créditos Gemini en silencio.)
 - [x] Landing con analítica y eventos de conversión (visita→checkout→pago) verificados disparando en producción.
 - [ ] QA completo en teléfono real (no solo responsive del navegador): hero sin romperse, CTAs cómodos al pulgar, carga rápida en red móvil, flujo de subir screenshots desde la galería fluido.
 - [x] Landing cumple las reglas de §4.1 (protagonista único, cero prueba social inventada, sample report completo navegable). Sample report completo en `/sample` (mismo `ReportView` que el reporte real → paridad garantizada); protagonista único "Mateo" en héroe, sample y fotos premium; ribbon "Best value" (sin prueba social inventada).
