@@ -76,6 +76,7 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
   "actionPlan": ["paso 1", "..5 pasos.."]
 }
 ```
+2b. **IDIOMA DE SALIDA FORZADO (aprendizaje de producción — el teaser salió en español dentro de una UI en inglés):** todo el texto generado por IA (diagnóstico, fortalezas del teaser, explicaciones, plan) sale SIEMPRE en el idioma de la UI (inglés v1), sin importar el idioma del perfil analizado. Se instruye explícito en el prompt (`/prompts/`): "Respond ONLY in {uiLanguage}, regardless of the language of the profile content." EXCEPCIÓN deliberada: las bios y prompts REESCRITOS se entregan en el idioma del perfil original (el usuario los pegará en SU app), pero toda la explicación alrededor va en {uiLanguage}. Cuando existan UI ES/PT, {uiLanguage} sigue el locale.
 3. Validar el JSON contra schema (zod); si falla, 1 reintento con el error como feedback; si falla de nuevo → status FAILED + alerta al admin.
 4. Generar PDF del reporte (server-side), subir a storage, email al usuario con link.
 - Los prompts de Gemini viven en `/prompts/*.md` versionados en git — NUNCA hardcodeados en el código.
@@ -126,6 +127,9 @@ Aprendizaje de producción: el QC dejó pasar una foto de grupo sin protagonista
 - [ ] Pantalla de confirmación editable funcionando en móvil (tap para corregir).
 - [ ] Reporte adaptado a la plataforma detectada (verificar con 3 perfiles: uno por plataforma).
 - [ ] Reporte JSON válido en ≥95% de submissions reales de prueba (20 perfiles).
+- [ ] Salida de IA siempre en el idioma de la UI (§5.1.2b): probar con un perfil en español y UI en inglés — cero texto mezclado en teaser y reporte (salvo bios/prompts reescritos, que van en el idioma del perfil).
+- [ ] Vista previa bloqueada (§12.1.2b): renderiza la estructura del reporte real y el contenido cubierto NO es recuperable desde el navegador (verificar con inspeccionar elemento y respuesta de red).
+- [ ] Botón de compartir prominente (§12.3.1): jerarquía visual de botón, no de link.
 - [ ] PDF descargable idéntico al reporte web.
 - [ ] Webhook de Stripe idempotente (reintento no duplica análisis).
 - [ ] Guardián anti-screenshot (§6.0): rechaza screenshots en el upload de fotos originales/modo manual; NO se dispara en el intake de perfil de §5.0.
@@ -185,9 +189,12 @@ Flujo: el usuario completa el intake (§4.2) → recibe GRATIS un teaser de su a
   - **Conteo de problemas detectados SIN revelarlos**: "Detectamos 3 problemas que están espantando tus matches."
   - Copy placeholder (EN): *"Your profile scored 6.2/10. Your first photo is genuinely strong — sharp, warm, real eye contact. But we found 3 problems that are pushing matches away. They're all fixable."*
   - REGLA: el conteo de problemas debe ser REAL (sale del `resultJson`), nunca un número inventado.
-- [ ] **12.1.2 — Bloque de precio + CTA.** Inmediatamente debajo del teaser: precio visible y botón de desbloqueo.
+- [ ] **12.1.2 — Bloque de precio + CTA.** Debajo de la vista bloqueada (12.1.2b): precio visible y botón de desbloqueo.
   - Copy placeholder (EN): botón *"Unlock my full report — $14.99"*.
   - El bloque premium ($34.99) se muestra como segunda opción, igual que en §4.1.
+- [ ] **12.1.2b — Vista previa BLOQUEADA del reporte (mostrar, no describir).** Entre el teaser y el CTA, renderizar la estructura del reporte real del usuario con su contenido cubierto: filas "Photo 1/2/3" con barras de score difuminadas + candado 🔒, "Problem #1/#2/#3" con texto tapado, y el inicio de una bio reescrita difuminada. Reutilizar el MISMO componente `ReportView` con overlay de bloqueo — cero componentes nuevos.
+  - Razón: el usuario no debe *leer* que existe un reporte; debe *verlo* a un pago de distancia (patrón de paywall estándar: la vista bloqueada convierte más que la lista de beneficios). La lista textual actual bajo el CTA ("full photo-by-photo scores...") queda subordinada o se elimina — el texto describe, la vista vende.
+  - REGLA DE SEGURIDAD: el contenido bloqueado NO viaja al navegador. No basta CSS blur sobre texto real en el DOM (se lee con inspeccionar elemento). El servidor entrega la estructura con placeholders/imagen difuminada; el contenido real solo se sirve tras el desbloqueo.
 - [ ] **12.1.3 — Modal de captura post-clic (NO cobra).** Al hacer clic en el CTA se abre un modal transparente:
   - Copy placeholder (EN): *"We're switching payments on right now. Leave your email and you'll be among the first in — with 30% off at launch."*
   - Campo de email + botón. Confirmación clara tras enviar ("You're on the list — we'll email you the moment it's live").
@@ -228,7 +235,7 @@ Sin esto, el tráfico se desperdicia: no se puede aprender de visitantes que no 
 
 ### 12.3 Botón de compartir (viralidad orgánica)
 
-- [ ] **12.3.1** — En la pantalla del teaser, botón "Share my score".
+- [ ] **12.3.1** — En la pantalla del teaser, botón "Share my score" como **botón secundario visible y prominente** (estilo outline junto al CTA principal), NO un link de texto pequeño. El momento de compartir es AHORA: quien acaba de sacar 4.8/10 está en el instante exacto de mandárselo al grupo de amigos; un link tímido desperdicia ese momento.
   - Copy placeholder (EN): *"My dating profile scored 6.2/10 😬 — get yours: truly.dating"*.
   - Usar Web Share API en móvil (nativo) con fallback a copiar-al-portapapeles en escritorio.
 - [ ] **12.3.2** — El link compartido lleva UTM propio (`source=share`) para medir cuánto tráfico genera.

@@ -52,12 +52,15 @@ export class AnalysisService {
    * Teaser ligero de la puerta falsa (SPEC §12.1.1): UNA sola llamada sobre los
    * screenshots → score + una fortaleza específica + conteo REAL de problemas.
    */
-  async teaser(screenshotUrls: string[]): Promise<{ score: number; strength: string; problemCount: number }> {
+  async teaser(
+    screenshotUrls: string[],
+  ): Promise<{ score: number; strength: string; problemCount: number; photoCount: number }> {
     const prompt = this.prompts.load('teaser');
     const schema = z.object({
       score: z.number().int().min(0).max(100),
       strength: z.string().min(1),
       problemCount: z.number().int().min(0).max(20),
+      photoCount: z.number().int().min(0).max(20).default(0),
     });
     let lastError = 'desconocido';
     for (let attempt = 1; attempt <= 2; attempt += 1) {

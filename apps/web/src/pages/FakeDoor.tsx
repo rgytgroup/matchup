@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
+import { ReportView } from '../components/ReportView';
 import { postLead, postTeaser, track } from '../api';
 
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 const SHARE_URL = 'truly.dating';
 
-type Teaser = { teaserId: string; score: number; strength: string; problemCount: number };
+type Teaser = {
+  teaserId: string;
+  score: number;
+  strength: string;
+  problemCount: number;
+  photoCount: number;
+};
 
 /**
  * Puerta falsa (SPEC §12): intake de screenshots → teaser gratis → precio → captura de correo.
@@ -127,36 +134,52 @@ export function FakeDoor({ priceAb }: { priceAb: boolean }) {
     );
   }
 
-  // ---- Paso 2: teaser + precio + captura ----
+  // ---- Paso 2: teaser + vista bloqueada + precio + captura ----
   return (
     <Layout>
-      <div className="mk-form" style={{ gap: '1.6rem' }}>
-        <div className="mk-teaser-score">
-          <div className="big">{(teaser.score / 10).toFixed(1)}<span>/10</span></div>
-          <p className="mk-eyebrow" style={{ margin: 0 }}>Your profile score</p>
-        </div>
-
-        <div className="mk-card mk-teaser-card">
-          <p className="win">✦ {teaser.strength}</p>
-          <p className="pen">
-            But we found <b>{teaser.problemCount} problems</b> that are pushing matches away. They&apos;re all fixable.
-          </p>
-        </div>
-
-        <div className="mk-teaser-unlock">
-          <button type="button" className="mk-btn" onClick={onUnlock}>
-            Unlock my full report — ${price.toFixed(2)}
-          </button>
-          <p className="mk-hint">
-            Full photo-by-photo scores, the {teaser.problemCount} problems &amp; how to fix them, 3 rewritten
-            bios and a 5-step plan. Premium adds 30 new AI photos of you.
-          </p>
-          <button type="button" className="mk-link" onClick={onShare}>
-            Share my score
-          </button>
-          {shareMsg && <span className="mk-count" style={{ color: 'var(--win)' }}>{shareMsg}</span>}
-        </div>
-      </div>
+      <ReportView
+        locked
+        lockedInfo={{
+          score: teaser.score,
+          photoCount: teaser.photoCount,
+          problemCount: teaser.problemCount,
+        }}
+        title="Your full report"
+        banner={
+          <div className="mk-teaser-banner">
+            <div className="mk-teaser-score">
+              <div className="big">
+                {(teaser.score / 10).toFixed(1)}
+                <span>/10</span>
+              </div>
+              <p className="mk-eyebrow" style={{ margin: 0 }}>Your profile score</p>
+            </div>
+            <div className="mk-card mk-teaser-card">
+              <p className="win">✦ {teaser.strength}</p>
+              <p className="pen">
+                But we found <b>{teaser.problemCount} problems</b> pushing matches away — all fixable.
+                Here&apos;s your full report:
+              </p>
+            </div>
+          </div>
+        }
+        footer={
+          <div className="mk-teaser-unlock">
+            <div className="mk-cta-row" style={{ justifyContent: 'center' }}>
+              <button type="button" className="mk-btn" onClick={onUnlock}>
+                Unlock my full report — ${price.toFixed(2)}
+              </button>
+              <button type="button" className="mk-btn ghost" onClick={onShare}>
+                Share my score
+              </button>
+            </div>
+            <p className="mk-hint">Premium plan adds 30 brand-new AI photos of you.</p>
+            {shareMsg && (
+              <span className="mk-count" style={{ color: 'var(--win)' }}>{shareMsg}</span>
+            )}
+          </div>
+        }
+      />
 
       {/* Modal de captura — NUNCA pide tarjeta (§12.1.3) */}
       {modalOpen && (
