@@ -20,7 +20,7 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 - `Submission`: id, orderId, intakeMode (SCREENSHOTS|MANUAL), screenshotUrls (String[]), extractedProfile (Json — ver §5.0: platform, bioText, prompts[], photoRefs[], confidence), questionnaire (Json: goal, ageRange, city), bioText (solo modo MANUAL), photoUrls (String[]), status (UPLOADED|EXTRACTING|CONFIRMING|ANALYZING|DONE|FAILED|NEEDS_ATTENTION), retryCount (Int, default 0), lastError (String?), createdAt.
 - `Report`: id, submissionId, resultJson (Json — ver schema §5), pdfUrl, publicSlug (acceso por link), createdAt.
 - `PhotoJob`: id, orderId, provider, trainingId, status (QUEUED|TRAINING|GENERATING|QC|DONE|FAILED|NEEDS_ATTENTION), outputUrls (String[]), acceptedUrls (String[]), qcScoredUrls (Json — urls ya puntuadas en QC, para reanudar sin re-puntuar), retryCount (Int, default 0), lastError (String?), costUsd.
-- `Lead`: id, email, teaserScore (Int), priceShown (Decimal), variant (String?), source (String? — utm/canal), submissionId (String?, FK opcional), convertedOrderId (String?), createdAt — lista de lanzamiento capturada por la puerta falsa (ver §12).
+- `Lead`: id, email, teaserScore (Int), priceShown (Decimal), variant (String?), source (String? — utm/canal), country (String? — código de país del header de Vercel, ver §12.2.2), submissionId (String?, FK opcional), convertedOrderId (String?), createdAt — lista de lanzamiento capturada por la puerta falsa (ver §12).
 - `Event`: id, type, meta (Json), createdAt — analítica interna mínima (visita checkout, compra, reembolso, y los 4 eventos del embudo de §12.2).
 - Nota: `retryCount`, `lastError` y los estados `NEEDS_ATTENTION` habilitan la recuperación de fallos (ver §11). `qcScoredUrls` permite reanudar el QC de fotos desde donde quedó sin re-puntuar lo ya hecho.
 
@@ -129,6 +129,9 @@ Aprendizaje de producción: el QC dejó pasar una foto de grupo sin protagonista
 - [ ] Reporte JSON válido en ≥95% de submissions reales de prueba (20 perfiles).
 - [ ] Salida de IA siempre en el idioma de la UI (§5.1.2b): probar con un perfil en español y UI en inglés — cero texto mezclado en teaser y reporte (salvo bios/prompts reescritos, que van en el idioma del perfil).
 - [ ] Vista previa bloqueada (§12.1.2b): renderiza la estructura del reporte real y el contenido cubierto NO es recuperable desde el navegador (verificar con inspeccionar elemento y respuesta de red).
+- [ ] Conteo dinámico: filas de "Problem #N" en la vista bloqueada = conteo del teaser = conteo del `resultJson` (probar con análisis de 3 y de 5 problemas).
+- [ ] CTA sticky visible en móvil durante todo el scroll del reporte bloqueado.
+- [ ] País capturado en los 4 eventos del embudo y en `Lead` (verificar que llega el código de país y que NO se almacena la IP).
 - [ ] Botón de compartir prominente (§12.3.1): jerarquía visual de botón, no de link.
 - [ ] PDF descargable idéntico al reporte web.
 - [ ] Webhook de Stripe idempotente (reintento no duplica análisis).
@@ -195,6 +198,8 @@ Flujo: el usuario completa el intake (§4.2) → recibe GRATIS un teaser de su a
 - [ ] **12.1.2b — Vista previa BLOQUEADA del reporte (mostrar, no describir).** Entre el teaser y el CTA, renderizar la estructura del reporte real del usuario con su contenido cubierto: filas "Photo 1/2/3" con barras de score difuminadas + candado 🔒, "Problem #1/#2/#3" con texto tapado, y el inicio de una bio reescrita difuminada. Reutilizar el MISMO componente `ReportView` con overlay de bloqueo — cero componentes nuevos.
   - Razón: el usuario no debe *leer* que existe un reporte; debe *verlo* a un pago de distancia (patrón de paywall estándar: la vista bloqueada convierte más que la lista de beneficios). La lista textual actual bajo el CTA ("full photo-by-photo scores...") queda subordinada o se elimina — el texto describe, la vista vende.
   - REGLA DE SEGURIDAD: el contenido bloqueado NO viaja al navegador. No basta CSS blur sobre texto real en el DOM (se lee con inspeccionar elemento). El servidor entrega la estructura con placeholders/imagen difuminada; el contenido real solo se sirve tras el desbloqueo.
+  - REGLA DE COHERENCIA: el número de filas "Problem #N" renderizadas en la vista bloqueada = el conteo REAL del `resultJson`, el mismo que anuncia el teaser. Si el análisis da 3 problemas, se muestran 3 filas; nunca un número fijo de filas decorativas.
+  - **CTA sticky en móvil:** el botón "Unlock" flota fijo en la parte baja de la pantalla mientras el usuario scrollea el reporte bloqueado (el 90% del tráfico es móvil; el momento de impulso no puede quedar a tres pantallas del botón). En desktop basta el CTA al final + opcionalmente repetido tras el teaser.
 - [ ] **12.1.3 — Modal de captura post-clic (NO cobra).** Al hacer clic en el CTA se abre un modal transparente:
   - Copy placeholder (EN): *"We're switching payments on right now. Leave your email and you'll be among the first in — with 30% off at launch."*
   - Campo de email + botón. Confirmación clara tras enviar ("You're on the list — we'll email you the moment it's live").
@@ -218,7 +223,7 @@ Sin esto, el tráfico se desperdicia: no se puede aprender de visitantes que no 
   2. `teaser_viewed` — completó el intake y vio su teaser.
   3. `unlock_clicked` — hizo clic en el botón de compra (**métrica de intención — la más importante**).
   4. `email_captured` — dejó su correo.
-- [ ] **12.2.2 — Metadatos por evento:** fuente/UTM, variante de precio, dispositivo (móvil/escritorio), timestamp.
+- [ ] **12.2.2 — Metadatos por evento:** fuente/UTM, variante de precio, dispositivo (móvil/escritorio), **país** (del header `x-vercel-ip-country` del lado del servidor — NUNCA almacenar la IP cruda, solo el código de país), timestamp. El país también se guarda en `Lead.country` al capturar el correo. Objetivo: poder responder "¿de qué países hacen clic en comprar?", no solo "¿de dónde me visitan?" — la intención por país decide dónde apuntar ads e idiomas.
 - [ ] **12.2.3 — Vista de embudo** (puede ser una consulta SQL o una página admin mínima) que muestre los 4 pasos con % de conversión entre cada uno.
 
 **Métricas clave y umbrales de decisión:**

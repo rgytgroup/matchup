@@ -181,6 +181,13 @@ export function FakeDoor({ priceAb }: { priceAb: boolean }) {
         }
       />
 
+      {/* CTA sticky en móvil (SPEC §12.1.2b): el impulso no puede quedar a 3 pantallas del botón */}
+      <div className="mk-sticky-cta">
+        <button type="button" className="mk-btn" onClick={onUnlock}>
+          Unlock my full report — ${price.toFixed(2)}
+        </button>
+      </div>
+
       {/* Modal de captura — NUNCA pide tarjeta (§12.1.3) */}
       {modalOpen && (
         <div className="mk-modal-overlay" onClick={() => !captured && setModalOpen(false)}>

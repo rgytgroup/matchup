@@ -208,9 +208,12 @@ function LockedReport({
   footer?: ReactNode;
   t: ReturnType<typeof useI18n>;
 }) {
-  const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(n || lo, hi));
-  const photoRows = Array.from({ length: clamp(info.photoCount, 3, 8) });
-  const problemRows = Array.from({ length: clamp(info.problemCount, 2, 6) });
+  // Conteo dinámico (SPEC §12.1.2b regla de coherencia): tantas filas como
+  // problemas/fotos reales anunció el teaser — nunca un número fijo decorativo.
+  // (min 1 para no renderizar vacío; cap 12 solo por seguridad de layout.)
+  const rows = (n: number) => Array.from({ length: Math.max(1, Math.min(n || 1, 12)) });
+  const photoRows = rows(info.photoCount);
+  const problemRows = rows(info.problemCount);
 
   return (
     <div className="mk-narrow mk-page">
