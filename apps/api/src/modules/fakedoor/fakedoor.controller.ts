@@ -15,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { randomUUID } from 'node:crypto';
 import { UPLOAD_RULES } from '@matchup/shared';
+import { normalizeCountry } from '../../common/country.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventsService } from '../../common/events/events.service';
 import { StorageService } from '../../storage/storage.service';
@@ -56,7 +57,8 @@ export class FakeDoorController {
   @UseInterceptors(FilesInterceptor('screenshots', 10))
   async teaser(
     @UploadedFiles() files: Array<Express.Multer.File> = [],
-    @Body() body: { source?: string; device?: string },
+    @Body() body: { source?: string; device?: string; country?: string },
+    @Headers('x-vercel-ip-country') vercelCountry?: string,
   ) {
     this.assertEnabled();
     if (files.length < 1 || files.length > 10) {
@@ -79,6 +81,7 @@ export class FakeDoorController {
       score: result.score,
       source: body.source?.slice(0, 40),
       device: body.device?.slice(0, 20),
+      country: normalizeCountry(body.country) ?? normalizeCountry(vercelCountry),
     });
 
     return { teaserId, ...result };
@@ -96,7 +99,9 @@ export class FakeDoorController {
       priceShown?: number;
       variant?: string;
       source?: string;
+      country?: string;
     },
+    @Headers('x-vercel-ip-country') vercelCountry?: string,
   ) {
     this.assertEnabled();
     const email = body.email?.trim().toLowerCase();
@@ -104,6 +109,7 @@ export class FakeDoorController {
       throw new BadRequestException('Email inválido');
     }
 
+    const country = normalizeCountry(body.country) ?? normalizeCountry(vercelCountry);
     await this.prisma.lead.create({
       data: {
         email,
@@ -111,6 +117,7 @@ export class FakeDoorController {
         priceShown: (body.priceShown ?? 14.99).toString(),
         variant: body.variant?.slice(0, 20) ?? null,
         source: body.source?.slice(0, 40) ?? null,
+        country: country ?? null,
         submissionId: body.teaserId ?? null,
       },
     });
@@ -119,6 +126,7 @@ export class FakeDoorController {
       variant: body.variant,
       source: body.source,
       priceShown: body.priceShown,
+      country,
     });
 
     return { ok: true };

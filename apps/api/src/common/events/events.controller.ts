@@ -1,5 +1,6 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Headers, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { normalizeCountry } from '../country.util';
 import { EventsService } from './events.service';
 
 /** Tipos de evento de cliente permitidos (allowlist para evitar spam de eventos). */
@@ -23,15 +24,17 @@ export class EventsController {
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post()
   async track(
-    @Body() body: { type?: string; source?: string; variant?: string; device?: string },
+    @Body() body: { type?: string; source?: string; variant?: string; device?: string; country?: string },
+    @Headers('x-vercel-ip-country') vercelCountry?: string,
   ) {
     if (body?.type && ALLOWED_TYPES.has(body.type)) {
-      // Metadatos del embudo (SPEC §12.2.2): utm/canal, variante de precio, dispositivo.
+      // Metadatos del embudo (SPEC §12.2.2): utm/canal, variante, dispositivo, país.
       await this.events.record(body.type, {
         channel: 'web',
         source: body.source?.slice(0, 40),
         variant: body.variant?.slice(0, 20),
         device: body.device?.slice(0, 20),
+        country: normalizeCountry(body.country) ?? normalizeCountry(vercelCountry),
       });
     }
     // Siempre 200: un evento inválido no debe romper nada en el cliente.

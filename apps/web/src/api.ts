@@ -2,12 +2,18 @@ import type { ReportResult } from '@matchup/shared';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-/** Metadatos del embudo (SPEC §12.2.2): fuente/UTM y dispositivo. */
-function funnelMeta(): { source?: string; device: string } {
+function readCookie(name: string): string | undefined {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : undefined;
+}
+
+/** Metadatos del embudo (SPEC §12.2.2): fuente/UTM, dispositivo y país (cookie `tc` del edge). */
+export function clientMeta(): { source?: string; device: string; country?: string } {
   const params = new URLSearchParams(window.location.search);
   const source = params.get('utm_source') ?? params.get('source') ?? undefined;
   const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
-  return { source, device };
+  const country = readCookie('tc');
+  return { source, device, country };
 }
 
 /** Registra un evento de conversión (fire-and-forget, no bloquea la UI). */
@@ -15,7 +21,7 @@ export function track(type: string, extra?: { variant?: string }): void {
   void fetch(`${API_URL}/track`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, ...funnelMeta(), ...extra }),
+    body: JSON.stringify({ type, ...clientMeta(), ...extra }),
   }).catch(() => undefined);
 }
 
@@ -43,6 +49,7 @@ export async function postLead(data: {
   priceShown: number;
   variant?: string;
   source?: string;
+  country?: string;
 }): Promise<{ ok: boolean }> {
   return parse(
     await fetch(`${API_URL}/leads`, {

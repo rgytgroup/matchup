@@ -118,6 +118,7 @@ model Lead {
   priceShown       Decimal  @db.Decimal(10, 2) // para el A/B de §12.1.5
   variant          String? // variante de precio mostrada
   source           String? // utm/canal (tiktok|reddit|directory|share|...)
+  country          String? // código de país (§12.2.2) — NUNCA se guarda la IP
   submissionId     String? // FK suave opcional a Submission
   convertedOrderId String? // se llena cuando el lead compra de verdad (§12.6)
   createdAt        DateTime @default(now())

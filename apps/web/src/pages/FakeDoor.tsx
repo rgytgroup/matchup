@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { ReportView } from '../components/ReportView';
-import { postLead, postTeaser, track } from '../api';
+import { clientMeta, postLead, postTeaser, track } from '../api';
 
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 const SHARE_URL = 'truly.dating';
@@ -49,6 +49,10 @@ export function FakeDoor({ priceAb }: { priceAb: boolean }) {
     if (screenshots.length < 1) return setError('Sube al menos un screenshot de tu perfil.');
     const form = new FormData();
     screenshots.forEach((s) => form.append('screenshots', s));
+    const meta = clientMeta();
+    if (meta.source) form.append('source', meta.source);
+    form.append('device', meta.device);
+    if (meta.country) form.append('country', meta.country);
     setLoading(true);
     setError(null);
     try {
@@ -69,13 +73,15 @@ export function FakeDoor({ priceAb }: { priceAb: boolean }) {
     e.preventDefault();
     if (!email) return;
     try {
+      const meta = clientMeta();
       await postLead({
         email,
         teaserId: teaser?.teaserId,
         teaserScore: teaser?.score ?? 0,
         priceShown: price,
         variant,
-        source: new URLSearchParams(window.location.search).get('utm_source') ?? undefined,
+        source: meta.source,
+        country: meta.country,
       });
       setCaptured(true);
     } catch (err) {
