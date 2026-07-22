@@ -35,6 +35,7 @@ export function Landing() {
 
   useEffect(() => {
     track('landing.visit');
+    track('visit'); // embudo de la puerta falsa (SPEC §12.2.1)
   }, []);
 
   return (

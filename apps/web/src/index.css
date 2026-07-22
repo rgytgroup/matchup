@@ -279,6 +279,27 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .mk-status-sub { display: flex; gap: .8rem; align-items: flex-start; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; margin-top: 1.4rem; max-width: 34rem; width: 100%; }
 .mk-status-sub .ttl { font-weight: 700; margin: 0 0 .25rem; }
 
+/* ---- fake door / teaser (SPEC §12) ---- */
+.mk-teaser-score { text-align: center; display: flex; flex-direction: column; align-items: center; gap: .3rem; padding-top: 1rem; }
+.mk-teaser-score .big { font-family: var(--font-display); font-weight: 800; font-size: clamp(3.4rem, 12vw, 5rem); line-height: 1; color: var(--honey-deep); }
+:root[data-theme="dark"] .mk-teaser-score .big { color: var(--honey); }
+@media (prefers-color-scheme: dark) { .mk-teaser-score .big { color: var(--honey); } }
+.mk-teaser-score .big span { font-size: .4em; color: var(--ink-faint); font-weight: 700; }
+.mk-teaser-card { display: flex; flex-direction: column; gap: .8rem; }
+.mk-teaser-card .win { margin: 0; padding: .7rem .9rem; background: var(--win-wash); border-radius: 12px; font-weight: 600; }
+.mk-teaser-card .pen { margin: 0; padding-left: .8rem; border-left: 3px solid var(--pen); color: var(--ink); font-size: 1.05rem; }
+.mk-teaser-card .pen b { color: var(--pen); }
+.mk-teaser-unlock { display: flex; flex-direction: column; align-items: center; gap: .8rem; text-align: center; padding: 1rem 0; }
+.mk-teaser-unlock .mk-btn { font-size: 1.05rem; padding: .9rem 1.8rem; }
+.mk-teaser-unlock .mk-hint { max-width: 42ch; }
+
+.mk-modal-overlay { position: fixed; inset: 0; background: rgba(20, 14, 22, .55); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 1.5rem; z-index: 50; }
+.mk-modal { background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 1.8rem; max-width: 26rem; width: 100%; display: flex; flex-direction: column; gap: .8rem; }
+.mk-modal h3 { font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; margin: 0; }
+.mk-modal p { margin: 0; color: var(--ink-soft); }
+.mk-modal-form { display: flex; flex-direction: column; gap: .6rem; margin-top: .4rem; }
+.mk-modal-form .mk-btn { justify-content: center; }
+
 /* ---- forms (start / confirm / checkout) ---- */
 .mk-form { width: min(100% - 2.5rem, 720px); margin-inline: auto; padding: 3rem 0 4rem; display: flex; flex-direction: column; gap: 2rem; }
 .mk-form-head h1 { font-family: var(--font-display); font-weight: 800; letter-spacing: -.02em; font-size: clamp(1.9rem, 4vw, 2.6rem); margin: 0 0 .6rem; }

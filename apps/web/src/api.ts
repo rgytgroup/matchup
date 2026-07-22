@@ -2,13 +2,55 @@ import type { ReportResult } from '@matchup/shared';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+/** Metadatos del embudo (SPEC §12.2.2): fuente/UTM y dispositivo. */
+function funnelMeta(): { source?: string; device: string } {
+  const params = new URLSearchParams(window.location.search);
+  const source = params.get('utm_source') ?? params.get('source') ?? undefined;
+  const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+  return { source, device };
+}
+
 /** Registra un evento de conversión (fire-and-forget, no bloquea la UI). */
-export function track(type: string): void {
+export function track(type: string, extra?: { variant?: string }): void {
   void fetch(`${API_URL}/track`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type }),
+    body: JSON.stringify({ type, ...funnelMeta(), ...extra }),
   }).catch(() => undefined);
+}
+
+/** Config pública (modo puerta falsa / A-B de precio). SPEC §12. */
+export async function getConfig(): Promise<{ fakeDoor: boolean; priceAb: boolean }> {
+  try {
+    return await parse(await fetch(`${API_URL}/config`));
+  } catch {
+    return { fakeDoor: false, priceAb: false };
+  }
+}
+
+/** Teaser gratuito de la puerta falsa: sube screenshots → score + fortaleza + #problemas. */
+export async function postTeaser(
+  form: FormData,
+): Promise<{ teaserId: string; score: number; strength: string; problemCount: number }> {
+  return parse(await fetch(`${API_URL}/teaser`, { method: 'POST', body: form }));
+}
+
+/** Captura de correo (nunca cobra). SPEC §12.1.3. */
+export async function postLead(data: {
+  email: string;
+  teaserId?: string;
+  teaserScore: number;
+  priceShown: number;
+  variant?: string;
+  source?: string;
+}): Promise<{ ok: boolean }> {
+  return parse(
+    await fetch(`${API_URL}/leads`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+  );
 }
 
 async function parse<T>(res: Response): Promise<T> {

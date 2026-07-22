@@ -1,18 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { isTierId, TIERS, type TierId } from '@matchup/shared';
 import { useI18n } from '../i18n';
 import { Layout } from '../components/Layout';
-import { startExtraction } from '../api';
+import { getConfig, startExtraction } from '../api';
+import { FakeDoor } from './FakeDoor';
 
 const MAX_SCREENSHOTS = 10;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 
 /**
+ * Decide el flujo de intake: puerta falsa (§12, mientras no haya pagos) o el
+ * intake real screenshot-first (§5.0). El modo lo define el backend vía /config.
+ */
+export function Start() {
+  const [cfg, setCfg] = useState<{ fakeDoor: boolean; priceAb: boolean } | null>(null);
+
+  useEffect(() => {
+    getConfig().then(setCfg).catch(() => setCfg({ fakeDoor: false, priceAb: false }));
+  }, []);
+
+  if (!cfg) {
+    return (
+      <Layout>
+        <div className="mk-form mk-center-note">
+          <span className="mk-spin" style={{ width: '2rem', height: '2rem', borderWidth: '3px' }} />
+        </div>
+      </Layout>
+    );
+  }
+  if (cfg.fakeDoor) return <FakeDoor priceAb={cfg.priceAb} />;
+  return <RealStart />;
+}
+
+/**
  * Intake screenshot-first (SPEC §5.0): el usuario sube screenshots de su perfil;
  * Gemini extrae el texto y en la pantalla de confirmación sube sus fotos originales.
  */
-export function Start() {
+function RealStart() {
   const t = useI18n();
   const navigate = useNavigate();
   const [params] = useSearchParams();

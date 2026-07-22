@@ -22,6 +22,7 @@ import { PhotosModule } from './modules/photos/photos.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { RecoveryModule } from './modules/recovery/recovery.module';
+import { FakeDoorModule } from './modules/fakedoor/fakedoor.module';
 import { DevModule } from './modules/dev/dev.module';
 import { CleanupModule } from './cleanup/cleanup.module';
 import { HealthController } from './health.controller';
@@ -63,6 +64,7 @@ import { HealthController } from './health.controller';
     ReportsModule,
     PaymentsModule,
     RecoveryModule,
+    FakeDoorModule,
   ],
   controllers: [HealthController],
   providers: [

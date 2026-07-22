@@ -20,7 +20,8 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 - `Submission`: id, orderId, intakeMode (SCREENSHOTS|MANUAL), screenshotUrls (String[]), extractedProfile (Json — ver §5.0: platform, bioText, prompts[], photoRefs[], confidence), questionnaire (Json: goal, ageRange, city), bioText (solo modo MANUAL), photoUrls (String[]), status (UPLOADED|EXTRACTING|CONFIRMING|ANALYZING|DONE|FAILED|NEEDS_ATTENTION), retryCount (Int, default 0), lastError (String?), createdAt.
 - `Report`: id, submissionId, resultJson (Json — ver schema §5), pdfUrl, publicSlug (acceso por link), createdAt.
 - `PhotoJob`: id, orderId, provider, trainingId, status (QUEUED|TRAINING|GENERATING|QC|DONE|FAILED|NEEDS_ATTENTION), outputUrls (String[]), acceptedUrls (String[]), qcScoredUrls (Json — urls ya puntuadas en QC, para reanudar sin re-puntuar), retryCount (Int, default 0), lastError (String?), costUsd.
-- `Event`: id, type, meta (Json), createdAt — analítica interna mínima (visita checkout, compra, reembolso).
+- `Lead`: id, email, teaserScore (Int), priceShown (Decimal), variant (String?), source (String? — utm/canal), submissionId (String?, FK opcional), convertedOrderId (String?), createdAt — lista de lanzamiento capturada por la puerta falsa (ver §12).
+- `Event`: id, type, meta (Json), createdAt — analítica interna mínima (visita checkout, compra, reembolso, y los 4 eventos del embudo de §12.2).
 - Nota: `retryCount`, `lastError` y los estados `NEEDS_ATTENTION` habilitan la recuperación de fallos (ver §11). `qcScoredUrls` permite reanudar el QC de fotos desde donde quedó sin re-puntuar lo ya hecho.
 
 ## 4. Páginas (frontend)
@@ -33,7 +34,7 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
    - **Paso 1 — Camino principal:** "Sube screenshots de tu perfil tal como se ve en tu app" (3–10 capturas desde la galería del teléfono, selector nativo, previews inmediatos). La IA extrae todo sola (ver §5.0). Camino alterno visible pero secundario: "Prefiero ingresarlo manualmente" → upload de 3–8 fotos + pegar bio/prompts + seleccionar plataforma.
    - **Paso 2 — Confirmación de extracción (solo modo screenshots):** pantalla "Esto encontramos en tu perfil" mostrando plataforma detectada, fotos, bio y prompts extraídos, editables con un tap. Genera confianza ("me leyó el perfil") y corrige errores de extracción antes de pagar.
    - **Paso 3 — Mini-cuestionario (máx. 3 preguntas):** objetivo (relación/casual), rango de edad que busca, ciudad. REGLA: todo campo debe cambiar visiblemente el output; la plataforma NO se pregunta si se detectó del screenshot.
-   - **Paso 4 →** checkout.
+   - **Paso 4 →** checkout (o puerta falsa mientras los pagos no estén activos — ver §12).
    - **Upload de fotos ORIGINALES para generación (tier premium):** este es un flujo DISTINTO del intake de perfil de arriba. Cuando el usuario premium sube las fotos con las que se entrenará el LoRA, aplica el guardián anti-screenshot (§6.0). Aquí un screenshot es basura de entrada; en el intake de perfil (§5.0) un screenshot es lo correcto. No confundir los dos flujos.
 3. `/checkout` → redirige a Stripe Checkout con el tier elegido.
 4. `/report/[slug]` Reporte web (accesible sin login vía slug): score global, score por foto con la foto al lado, diagnóstico de bio, 3 bios nuevas, prompts, plan de 5 pasos, botón "Download PDF". Si tier fotos: galería de fotos aceptadas con descarga.
@@ -106,7 +107,7 @@ Aprendizaje de producción: el QC dejó pasar una foto de grupo sin protagonista
 - **Costo/consumo:** el QC llama a Gemini una vez por imagen candidata (~40–80 llamadas por orden premium, además del análisis). Es el mayor consumidor de créditos Gemini del sistema. Vigilar (ver §11.5) y, cuando convenga, optimizar (puntuar en lote, o usar un modelo más barato para el QC de parecido).
 
 ## 7. Variables de entorno
-`DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY, REPLICATE_API_TOKEN, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY, APP_BASE_URL, ADMIN_TOKEN`
+`DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY, REPLICATE_API_TOKEN, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY, APP_BASE_URL, ADMIN_TOKEN, FAKE_DOOR_ENABLED, PRICE_AB_ENABLED`
 
 ## 8. Reglas de negocio y guardrails
 - Compra única. PROHIBIDO introducir suscripciones, timers falsos de descuento o dark patterns — la honestidad es el posicionamiento.
@@ -117,6 +118,7 @@ Aprendizaje de producción: el QC dejó pasar una foto de grupo sin protagonista
 - No entrenar LoRA con screenshots (ver §6.0): protege calidad del producto y créditos.
 - Todo texto de salida al usuario pasa por el idioma del archivo i18n.
 - **Regla de oro de entrega (ver §11):** un `Order` en estado PAID SIEMPRE termina en el entregable pagado (reporte, y fotos si es premium), cueste los reintentos que cueste. El cliente NUNCA re-paga por un fallo nuestro y NUNCA queda en un limbo sin respuesta.
+- **Honestidad en la validación (ver §12):** la puerta falsa nunca pide datos de tarjeta ni simula un cobro; declara con transparencia que los pagos aún no están activos.
 
 ## 9. Criterios de aceptación del MVP (definition of done)
 - [ ] Flujo completo pago→análisis→reporte→email sin intervención manual.
@@ -129,6 +131,7 @@ Aprendizaje de producción: el QC dejó pasar una foto de grupo sin protagonista
 - [ ] Guardián anti-screenshot (§6.0): rechaza screenshots en el upload de fotos originales/modo manual; NO se dispara en el intake de perfil de §5.0.
 - [ ] QC de fotos: rechaza fotos de grupo/sin rostro individual claro (§6.3) antes de puntuar parecido, y descarta bajos parecidos.
 - [ ] Generación premium con fotos reales (no screenshots): ≥20 de ~60 aceptadas en QC, y validación visual humana de que ≥8–10 son usables sin dudar (define si el tier $34.99 se lanza).
+- [ ] Puerta falsa e instrumentación (§12) completas y verificadas ANTES del primer visitante desconocido.
 - [x] Recuperación de fallos (§11): un Order PAID que falla en análisis o fotos se recupera vía reintento automático idempotente, botón "Retry" del cliente o re-encolado admin, SIN re-cobro y SIN re-entrenar el LoRA; reanuda desde el último paso exitoso. Verificado en prod: reintento auto 3x → NEEDS_ATTENTION con retryCount/lastError; botón Retry re-encola solo lo pendiente (`actions:["photos"]`), conserva el trainingId. (Pendiente §11.5: alerta de presupuesto en Google Cloud para no volver a agotar créditos Gemini en silencio.)
 - [x] Landing con analítica y eventos de conversión (visita→checkout→pago) verificados disparando en producción.
 - [ ] QA completo en teléfono real (no solo responsive del navegador): hero sin romperse, CTAs cómodos al pulgar, carga rápida en red móvil, flujo de subir screenshots desde la galería fluido.
@@ -165,3 +168,109 @@ Todo job de recuperación reanuda desde el último paso exitoso; nunca reinicia 
 
 ### 11.6 Economía unitaria verificada (julio 2026, datos reales de prueba)
 Costo por orden PREMIUM ($34.99): Gemini ~$0.70 + Replicate ~$0.70 + Stripe ~$1.31 = ~$2.71 → margen bruto ~92%. Orden AUDIT ($14.99): ~$1.05 → margen ~93%. El modelo cuadra con holgura; el QC de fotos es la palanca de optimización si algún día el volumen aprieta (no antes).
+
+## 12. Validación pre-lanzamiento y adquisición orgánica (fake door)
+
+**Contexto y razón de existir:** el producto está construido pero NO se puede cobrar todavía — la LLC (New Mexico) se crea el 28 de julio y la ruta LLC → EIN → banco → Stripe deja los pagos activos a mediados de agosto. En vez de esperar ~3 semanas sin datos, se lanza con una **puerta falsa**: se mide intención de compra real con tráfico real y se construye una lista de correos para convertir el día que Stripe esté vivo.
+
+**Principio innegociable:** la puerta falsa es transparente, no engañosa. NUNCA se pide dato de tarjeta, NUNCA se simula un cobro, y el mensaje post-clic dice la verdad ("estamos habilitando los pagos"). La honestidad es el posicionamiento del producto (§8) y eso aplica también a cómo se valida.
+
+### 12.1 Pantalla de puerta falsa (teaser + captura de intención)
+
+Flujo: el usuario completa el intake (§4.2) → recibe GRATIS un teaser de su análisis → en el pico de curiosidad se muestra precio y CTA → el clic captura correo, no dinero.
+
+- [ ] **12.1.1 — Teaser gratuito post-análisis.** Ejecutar el análisis real (§5.1) y mostrar solo:
+  - Score global (ej. "6.2/10").
+  - **Una fortaleza real y específica** extraída del análisis (no genérica: debe citar algo concreto de SU perfil).
+  - **Conteo de problemas detectados SIN revelarlos**: "Detectamos 3 problemas que están espantando tus matches."
+  - Copy placeholder (EN): *"Your profile scored 6.2/10. Your first photo is genuinely strong — sharp, warm, real eye contact. But we found 3 problems that are pushing matches away. They're all fixable."*
+  - REGLA: el conteo de problemas debe ser REAL (sale del `resultJson`), nunca un número inventado.
+- [ ] **12.1.2 — Bloque de precio + CTA.** Inmediatamente debajo del teaser: precio visible y botón de desbloqueo.
+  - Copy placeholder (EN): botón *"Unlock my full report — $14.99"*.
+  - El bloque premium ($34.99) se muestra como segunda opción, igual que en §4.1.
+- [ ] **12.1.3 — Modal de captura post-clic (NO cobra).** Al hacer clic en el CTA se abre un modal transparente:
+  - Copy placeholder (EN): *"We're switching payments on right now. Leave your email and you'll be among the first in — with 30% off at launch."*
+  - Campo de email + botón. Confirmación clara tras enviar ("You're on the list — we'll email you the moment it's live").
+  - PROHIBIDO: pedir número de tarjeta, CVV, dirección de facturación o cualquier dato de pago. PROHIBIDO simular una pasarela.
+- [ ] **12.1.4 — Modelo de datos.** Nueva tabla `Lead`: id, email, teaserScore (Int), priceShown (Decimal — para el A/B de §12.1.5), variant (String?), source (String? — utm/canal), submissionId (FK, opcional), createdAt, convertedOrderId (String?, se llena cuando compre de verdad).
+- [ ] **12.1.5 — A/B test de precio (opcional, activable por flag).** Mostrar dos precios distintos a mitades del tráfico (ej. $14.99 vs $19.99) para descubrir disposición a pagar. La variante mostrada se persiste en `Lead.priceShown` y `Lead.variant`.
+  - REGLA DE HONESTIDAD: quien dejó su correo viendo un precio recibe ESE precio (con su 30%) cuando se abran los pagos. El A/B mide disposición, no sirve para cobrar de más después.
+
+**Criterios de aceptación (12.1):**
+- [ ] El teaser muestra una fortaleza específica del perfil real del usuario y un conteo de problemas derivado del `resultJson`, no textos fijos.
+- [ ] El clic en el CTA nunca inicia un flujo de pago ni solicita datos de tarjeta.
+- [ ] El correo queda persistido en `Lead` con score, precio mostrado y fuente, y es exportable en CSV.
+- [ ] El mensaje post-clic declara con claridad que los pagos aún no están activos.
+
+### 12.2 Instrumentación (BLOQUEANTE — antes del primer visitante)
+
+Sin esto, el tráfico se desperdicia: no se puede aprender de visitantes que no se midieron.
+
+- [ ] **12.2.1 — Cuatro eventos obligatorios** en `Event` (§3) y en la analítica del front:
+  1. `visit` — llegó a la landing.
+  2. `teaser_viewed` — completó el intake y vio su teaser.
+  3. `unlock_clicked` — hizo clic en el botón de compra (**métrica de intención — la más importante**).
+  4. `email_captured` — dejó su correo.
+- [ ] **12.2.2 — Metadatos por evento:** fuente/UTM, variante de precio, dispositivo (móvil/escritorio), timestamp.
+- [ ] **12.2.3 — Vista de embudo** (puede ser una consulta SQL o una página admin mínima) que muestre los 4 pasos con % de conversión entre cada uno.
+
+**Métricas clave y umbrales de decisión:**
+| Métrica | Cálculo | Lectura |
+|---|---|---|
+| **Intención de compra** | `unlock_clicked` / `visit` | **≥3-5% con tráfico frío = señal fuerte** (validado, listo para ads). 1-3% = zona gris, iterar teaser/promesa. **<1% = NO pagar ads todavía**: corregir promesa, gancho o teaser primero. |
+| **Captura de correo** | `email_captured` / `unlock_clicked` | Mide qué tan bien convierte el modal. <40% → revisar copy del modal. |
+| **Completitud del intake** | `teaser_viewed` / `visit` | Si es baja, el problema es fricción en §4.2, no la oferta. |
+
+**Criterios de aceptación (12.2):**
+- [ ] Los 4 eventos disparan verificados en producción (probados end-to-end desde un dispositivo real).
+- [ ] El embudo es consultable sin tocar código.
+- [ ] Ningún visitante llega a la puerta falsa antes de que 12.2 esté completo.
+
+### 12.3 Botón de compartir (viralidad orgánica)
+
+- [ ] **12.3.1** — En la pantalla del teaser, botón "Share my score".
+  - Copy placeholder (EN): *"My dating profile scored 6.2/10 😬 — get yours: truly.dating"*.
+  - Usar Web Share API en móvil (nativo) con fallback a copiar-al-portapapeles en escritorio.
+- [ ] **12.3.2** — El link compartido lleva UTM propio (`source=share`) para medir cuánto tráfico genera.
+- [ ] **12.3.3** — PRIVACIDAD: el compartido incluye SOLO el score numérico. Nunca fotos, bio, ni ningún dato del perfil del usuario.
+
+**Criterios de aceptación (12.3):**
+- [ ] Compartir funciona en iOS y Android desde el navegador.
+- [ ] El tráfico entrante por `source=share` aparece diferenciado en el embudo.
+
+### 12.4 Plan de adquisición orgánica (hasta el 28 de julio, presupuesto $0)
+
+**Meta: 100-300 visitantes desconocidos (no amigos) antes del 28 de julio.**
+
+- [ ] **12.4.1 — TikTok diario (canal principal).** 1 video/día en inglés:
+  - Formato: grabación de pantalla de Truly analizando un perfil real (con permiso) + gancho de texto grande en los primeros 2 segundos + subtítulos. Editado en CapCut (gratis). Sin cámara, sin producción, sin aparecer en pantalla.
+  - Ganchos placeholder: *"This profile gets zero matches. Here's why."* / *"I let an AI roast my dating profile."* / *"Your first photo is the only one that matters — here's proof."*
+  - Link en bio (TikTok no permite links en el video).
+  - Publicar el MISMO video en Reels y Shorts (triple alcance, cero trabajo extra).
+- [ ] **12.4.2 — Reddit (2-3 hilos/día).** En r/Tinder, r/hingeapp, r/OnlineDating: responder hilos de "roast my profile" con análisis genuinos y útiles.
+  - REGLA ANTI-SPAM: **no pegar el link en los comentarios.** El link va en el perfil de Reddit. El valor del comentario es lo que hace que la gente entre al perfil. Respetar las reglas de cada subreddit.
+- [ ] **12.4.3 — Directorios de herramientas IA (una sola tarde).** Enviar Truly a directorios de productos/herramientas de IA. Tarea única, no recurrente.
+- [ ] **12.4.4 — Registro de canal.** Cada canal usa su propio UTM (`tiktok`, `reddit`, `directory`, `share`) para saber cuál trae tráfico que realmente hace clic en comprar — no solo visitas.
+
+**Criterios de aceptación (12.4):**
+- [ ] ≥100 visitantes únicos desconocidos antes del 28/jul, con fuente identificada.
+- [ ] Al menos 7 videos publicados en los 3 canales de video.
+- [ ] Cero advertencias o baneos por spam en Reddit.
+
+### 12.5 Calendario de ejecución
+
+| Cuándo | Qué | Objetivo |
+|---|---|---|
+| **Esta semana** | Puerta falsa (12.1) + instrumentación (12.2) + botón compartir (12.3) | Todo listo ANTES del primer visitante |
+| **Hasta el 28/jul** | Solo tráfico orgánico: TikTok diario + Reddit + directorios (12.4) | 100-300 visitantes, primer dato de intención |
+| **Desde el 28/jul** (LLC creada) | Ads $5-10 USD/día, 2-3 creativos de prueba, apuntando a la MISMA puerta falsa | **Objetivo: datos y correos, NO facturar todavía.** Comparar intención de tráfico pago vs orgánico |
+| **Mediados de agosto** (Stripe activo) | Email a toda la lista de `Lead` con el 30% prometido | **Primeras ventas reales** |
+
+**Regla de decisión antes de gastar en ads (28/jul):** si la intención (`unlock_clicked`/`visit`) del tráfico orgánico va **<1%**, NO se encienden los ads — primero se corrige la promesa/teaser. Pagar por tráfico hacia una oferta que no convierte es quemar plata.
+
+### 12.6 Cierre de la puerta falsa (cuando Stripe esté vivo)
+
+- [ ] Reemplazar el modal de captura por el checkout real de Stripe (§4.3).
+- [ ] Enviar a toda la lista de `Lead` el correo con su descuento del 30% sobre el precio que se le mostró (§12.1.5).
+- [ ] Marcar `Lead.convertedOrderId` cuando un lead compre, para medir la tasa de conversión real de la lista.
+- [ ] Registrar en este SPEC la métrica final: % de intención medida en fake door vs % de compra real. Es el dato más valioso para futuros productos del estudio.

@@ -48,6 +48,28 @@ export class AnalysisService {
     throw new Error(`La extracción no pasó la validación: ${lastError}`);
   }
 
+  /**
+   * Teaser ligero de la puerta falsa (SPEC §12.1.1): UNA sola llamada sobre los
+   * screenshots → score + una fortaleza específica + conteo REAL de problemas.
+   */
+  async teaser(screenshotUrls: string[]): Promise<{ score: number; strength: string; problemCount: number }> {
+    const prompt = this.prompts.load('teaser');
+    const schema = z.object({
+      score: z.number().int().min(0).max(100),
+      strength: z.string().min(1),
+      problemCount: z.number().int().min(0).max(20),
+    });
+    let lastError = 'desconocido';
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      const raw = await this.provider.generateReportJson(prompt, screenshotUrls);
+      const parsed = schema.safeParse(this.parseJson(raw));
+      if (parsed.success) return parsed.data;
+      lastError = JSON.stringify(parsed.error.flatten());
+      this.logger.warn(`Teaser intento ${attempt}: ${lastError}`);
+    }
+    throw new Error(`El teaser no pasó la validación: ${lastError}`);
+  }
+
   async moderate(photoUrls: string[]): Promise<ModerationResult> {
     const prompt = this.prompts.load('moderation');
     const raw = await this.provider.moderate(prompt, photoUrls);

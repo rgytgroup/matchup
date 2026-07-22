@@ -110,6 +110,21 @@ model PhotoJob {
   createdAt    DateTime       @default(now())
 }
 
+// Lista de lanzamiento capturada por la puerta falsa (SPEC §3, §12).
+model Lead {
+  id               String   @id @default(cuid())
+  email            String
+  teaserScore      Int // score mostrado en el teaser (0-100)
+  priceShown       Decimal  @db.Decimal(10, 2) // para el A/B de §12.1.5
+  variant          String? // variante de precio mostrada
+  source           String? // utm/canal (tiktok|reddit|directory|share|...)
+  submissionId     String? // FK suave opcional a Submission
+  convertedOrderId String? // se llena cuando el lead compra de verdad (§12.6)
+  createdAt        DateTime @default(now())
+
+  @@index([email])
+}
+
 // Analítica interna mínima (SPEC §3): visita checkout, compra, reembolso, etc.
 model Event {
   id        String   @id @default(cuid())

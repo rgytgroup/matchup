@@ -24,6 +24,9 @@ export const envSchema = z.object({
   EMAIL_FROM: z.string().default('Truly <onboarding@resend.dev>'),
   // Token para el endpoint de admin de re-disparo de órdenes (SPEC §11.4).
   ADMIN_TOKEN: z.string().default(''),
+  // Puerta falsa de validación pre-lanzamiento (SPEC §12).
+  FAKE_DOOR_ENABLED: z.coerce.boolean().default(false),
+  PRICE_AB_ENABLED: z.coerce.boolean().default(false),
   SUPABASE_BUCKET: z.string().default('submissions'),
   // QC de fotos: umbral de parecido (0-100) para aceptar una foto generada.
   PHOTO_QC_THRESHOLD: z.coerce.number().default(70),
