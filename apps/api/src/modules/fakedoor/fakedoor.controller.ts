@@ -6,10 +6,12 @@ import {
   Headers,
   NotFoundException,
   Post,
+  Query,
   UnauthorizedException,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
@@ -132,19 +134,29 @@ export class FakeDoorController {
     return { ok: true };
   }
 
-  /** Vista de embudo (SPEC §12.2.3), protegida con ADMIN_TOKEN. */
+  /** Vista de embudo (SPEC §12.2.3), protegida con ADMIN_TOKEN. Filtrable por fuente y país. */
   @Get('funnel')
-  async funnel(@Headers('x-admin-token') token?: string) {
+  async funnel(
+    @Headers('x-admin-token') token?: string,
+    @Query('source') source?: string,
+    @Query('country') country?: string,
+  ) {
     const expected = this.config.get<string>('ADMIN_TOKEN');
     if (!expected || token !== expected) throw new UnauthorizedException('Token de admin inválido');
 
+    const src = source?.trim() || undefined;
+    const ctry = normalizeCountry(country);
+
     const steps = ['visit', 'teaser_viewed', 'unlock_clicked', 'email_captured'];
     const counts: Record<string, number> = {};
-    for (const s of steps) counts[s] = await this.prisma.event.count({ where: { type: s } });
-    const leads = await this.prisma.lead.count();
+    for (const s of steps) {
+      counts[s] = await this.prisma.event.count({ where: this.eventWhere(s, src, ctry) });
+    }
+    const leads = await this.prisma.lead.count({ where: { source: src, country: ctry } });
 
     const pct = (num: number, den: number) => (den ? Math.round((num / den) * 1000) / 10 : 0);
     return {
+      filters: { source: src ?? null, country: ctry ?? null },
       counts,
       leads,
       conversion: {
@@ -153,5 +165,13 @@ export class FakeDoorController {
         capture: pct(counts.email_captured, counts.unlock_clicked), // captura del modal
       },
     };
+  }
+
+  /** Filtro de eventos por tipo + metadatos JSON (fuente/país) para el embudo. */
+  private eventWhere(type: string, source?: string, country?: string): Prisma.EventWhereInput {
+    const AND: Prisma.EventWhereInput[] = [];
+    if (source) AND.push({ meta: { path: ['source'], equals: source } });
+    if (country) AND.push({ meta: { path: ['country'], equals: country } });
+    return AND.length ? { type, AND } : { type };
   }
 }

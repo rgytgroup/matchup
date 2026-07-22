@@ -41,6 +41,24 @@ export async function postTeaser(
   return parse(await fetch(`${API_URL}/teaser`, { method: 'POST', body: form }));
 }
 
+/** Vista de embudo admin (SPEC §12.2.3), protegida con ADMIN_TOKEN, filtrable. */
+export async function getFunnel(
+  token: string,
+  filters: { source?: string; country?: string },
+): Promise<{
+  filters: { source: string | null; country: string | null };
+  counts: Record<string, number>;
+  leads: number;
+  conversion: { intake: number; intent: number; capture: number };
+}> {
+  const qs = new URLSearchParams();
+  if (filters.source) qs.set('source', filters.source);
+  if (filters.country) qs.set('country', filters.country);
+  return parse(
+    await fetch(`${API_URL}/funnel?${qs.toString()}`, { headers: { 'x-admin-token': token } }),
+  );
+}
+
 /** Captura de correo (nunca cobra). SPEC §12.1.3. */
 export async function postLead(data: {
   email: string;

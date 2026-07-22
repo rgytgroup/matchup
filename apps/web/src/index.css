@@ -279,6 +279,22 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .mk-status-sub { display: flex; gap: .8rem; align-items: flex-start; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; margin-top: 1.4rem; max-width: 34rem; width: 100%; }
 .mk-status-sub .ttl { font-weight: 700; margin: 0 0 .25rem; }
 
+/* ---- admin funnel (SPEC §12.2.3) ---- */
+.mk-funnel { display: flex; flex-direction: column; gap: .3rem; }
+.mk-funnel-step { display: flex; flex-direction: column; gap: .3rem; }
+.mk-funnel-pct { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-faint); text-align: center; }
+.mk-funnel-pct span { opacity: .7; }
+.mk-funnel-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 1.1rem; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.mk-funnel-bar.intent { border-color: var(--honey); box-shadow: 0 0 0 1px var(--honey); }
+.mk-funnel-bar .lbl { font-weight: 600; }
+.mk-funnel-bar .val { font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.mk-funnel-kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.mk-funnel-kpi > div { display: flex; flex-direction: column; gap: .15rem; }
+.mk-funnel-kpi .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); font-weight: 700; }
+.mk-funnel-kpi .v { font-family: var(--font-display); font-weight: 800; font-size: 1.8rem; line-height: 1; }
+.mk-funnel-kpi .cap { font-size: .78rem; color: var(--ink-faint); }
+@media (max-width: 560px) { .mk-funnel-kpi { grid-template-columns: 1fr; gap: .8rem; } }
+
 /* ---- fake door / teaser (SPEC §12) ---- */
 .mk-teaser-score { text-align: center; display: flex; flex-direction: column; align-items: center; gap: .3rem; padding-top: 1rem; }
 .mk-teaser-score .big { font-family: var(--font-display); font-weight: 800; font-size: clamp(3.4rem, 12vw, 5rem); line-height: 1; color: var(--honey-deep); }
@@ -302,12 +318,13 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .mk-lockrow { display: flex; align-items: center; gap: .8rem; }
 .mk-lockrow b { flex: none; min-width: 4.8rem; color: var(--ink-soft); font-weight: 700; }
 .mk-lockblock { display: grid; gap: .5rem; padding: .7rem .85rem; background: var(--win-wash); border-radius: 12px; }
-/* CTA sticky en móvil (§12.1.2b) — solo en pantallas pequeñas */
+/* CTA sticky en móvil (§12.1.2b) — solo en pantallas pequeñas. Portaleado a <body>. */
 .mk-sticky-cta { display: none; }
 @media (max-width: 860px) {
-  .mk-sticky-cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: .7rem 1rem calc(.7rem + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--ground) 92%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; }
+  .mk-sticky-cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; padding: .7rem 1rem calc(.7rem + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--ground) 92%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px -12px rgba(0,0,0,.3); display: flex; }
   .mk-sticky-cta .mk-btn { flex: 1; justify-content: center; }
-  .mk-page { padding-bottom: 6rem; } /* deja espacio para no tapar el contenido */
+  .mk-page { padding-bottom: 6.5rem; } /* espacio para no tapar el contenido */
+  .mk-hide-mobile { display: none !important; }
 }
 
 .mk-modal-overlay { position: fixed; inset: 0; background: rgba(20, 14, 22, .55); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 1.5rem; z-index: 50; }

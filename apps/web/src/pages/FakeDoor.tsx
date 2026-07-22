@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Layout } from '../components/Layout';
 import { ReportView } from '../components/ReportView';
 import { clientMeta, postLead, postTeaser, track } from '../api';
@@ -172,7 +173,7 @@ export function FakeDoor({ priceAb }: { priceAb: boolean }) {
         footer={
           <div className="mk-teaser-unlock">
             <div className="mk-cta-row" style={{ justifyContent: 'center' }}>
-              <button type="button" className="mk-btn" onClick={onUnlock}>
+              <button type="button" className="mk-btn mk-hide-mobile" onClick={onUnlock}>
                 Unlock my full report — ${price.toFixed(2)}
               </button>
               <button type="button" className="mk-btn ghost" onClick={onShare}>
@@ -187,12 +188,16 @@ export function FakeDoor({ priceAb }: { priceAb: boolean }) {
         }
       />
 
-      {/* CTA sticky en móvil (SPEC §12.1.2b): el impulso no puede quedar a 3 pantallas del botón */}
-      <div className="mk-sticky-cta">
-        <button type="button" className="mk-btn" onClick={onUnlock}>
-          Unlock my full report — ${price.toFixed(2)}
-        </button>
-      </div>
+      {/* CTA sticky en móvil (SPEC §12.1.2b): portal a body para que el fixed se ancle
+          al viewport sin importar ancestros con transform/filter. */}
+      {createPortal(
+        <div className="mk-sticky-cta">
+          <button type="button" className="mk-btn" onClick={onUnlock}>
+            Unlock my full report — ${price.toFixed(2)}
+          </button>
+        </div>,
+        document.body,
+      )}
 
       {/* Modal de captura — NUNCA pide tarjeta (§12.1.3) */}
       {modalOpen && (
