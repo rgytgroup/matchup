@@ -30,12 +30,12 @@ Tailor the rewritten bios and suggested prompts to the platform's format and nor
 Set the output `platform` field to the platform you optimized for, and make it explicit in `bioDiagnosis` (e.g. "Optimized for Hinge").
 
 ## Qué evaluar
-1. **Per photo** (`photos[]`): score 0–100, whether to `keep`, concrete `issues`, and `strengths`. Consider: is the face clearly visible, lighting, background clutter, group-photo confusion, expression/approachability, outfit, redundancy with other photos.
-2. **Missing archetypes** (`missingArchetypes`): which proven photo types are absent (e.g. "clear solo headshot", "social proof photo", "hobby/activity photo", "full-body photo", "candid photo").
-3. **Bio diagnosis** (`bioDiagnosis`): what the current bio does well and where it reads as generic, negative, or low-effort.
-4. **Rewritten bios** (`rewrittenBios`): aim for {{rewrittenBios}} distinct rewrites in different voices (witty, sincere, adventurous), each ready to paste.
-5. **Suggested prompts** (`suggestedPrompts`): app-style prompt + a strong sample answer tailored to this person.
-6. **Action plan** (`actionPlan`): aim for {{actionPlanSteps}} prioritized, concrete steps.
+1. **Per photo** (`photos[]`): score 0–100, whether to `keep`, concrete `issues` (weaknesses), `strengths`, and a one-line `recommendation` (the single most useful action for that photo). Consider face visibility, lighting, background clutter, group-photo confusion, expression, outfit, redundancy.
+2. **Missing archetypes** (`missingArchetypes`): which proven photo types are absent.
+3. **Bio diagnosis** (`bioDiagnosis`): a short paragraph. PLUS `bioAnalysis` = scannable structure: `marks` (2–4 short flags like "Reads generic", "Lists traits", "Gives nothing to reply to"), `why`, `impact` (what it costs in matches), `direction` (how to fix it).
+4. **Rewritten bios** (`rewrittenBios`): aim for {{rewrittenBios}} rewrites, each an object: `style` (one of: "Conversation Starter", "Funny", "Adventure", "Confident"), `text` (ready to paste), and `best: true` on the single strongest one. In the profile's original language (§5.1.2b).
+5. **Suggested prompts** (`suggestedPrompts`): each = `prompt` (app-style label), `answer` (strong sample), `why` (one line on why it works).
+6. **Action plan** (`actionPlan`): aim for {{actionPlanSteps}} tasks, each an object: `task` (concrete action), `minutes` (realistic estimate), `impact` ("High" | "Medium" | "Low").
 
 ## Formato de salida (obligatorio)
 Return ONLY a JSON object with exactly these keys:
@@ -50,12 +50,13 @@ Return ONLY a JSON object with exactly these keys:
     "bio":     { "score": 0, "suggestions": 0 },
     "prompts": { "score": 0, "suggestions": 0 }
   },
-  "photos": [{ "index": 0, "score": 0, "keep": true, "issues": ["..."], "strengths": ["..."] }],
+  "photos": [{ "index": 0, "score": 0, "keep": true, "issues": ["..."], "strengths": ["..."], "recommendation": "..." }],
   "missingArchetypes": ["..."],
   "bioDiagnosis": "...",
-  "rewrittenBios": ["...", "...", "..."],
-  "suggestedPrompts": [{ "prompt": "...", "answer": "..." }],
-  "actionPlan": ["...", "..."]
+  "bioAnalysis": { "marks": ["Reads generic", "Lists traits"], "why": "...", "impact": "...", "direction": "..." },
+  "rewrittenBios": [{ "style": "Conversation Starter", "text": "...", "best": true }, { "style": "Funny", "text": "..." }, { "style": "Adventure", "text": "..." }],
+  "suggestedPrompts": [{ "prompt": "...", "answer": "...", "why": "..." }],
+  "actionPlan": [{ "task": "...", "minutes": 5, "impact": "High" }]
 }
 ```
 

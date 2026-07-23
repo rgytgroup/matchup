@@ -37,7 +37,11 @@ export class ReportPdfService {
       doc.y = 120;
 
       doc.font('Helvetica').fontSize(10).fillColor(LIGHT).text('OVERALL SCORE');
-      doc.font('Helvetica-Bold').fontSize(38).fillColor(INK).text(`${result.overallScore} / 100`);
+      const scoreLine =
+        result.potentialScore != null
+          ? `${result.overallScore} / 100   →   potential ${result.potentialScore}`
+          : `${result.overallScore} / 100`;
+      doc.font('Helvetica-Bold').fontSize(34).fillColor(INK).text(scoreLine);
       if (result.platform) {
         doc
           .font('Helvetica')
@@ -62,6 +66,9 @@ export class ReportPdfService {
         if (p.strengths.length) {
           doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(`Strengths: ${p.strengths.join('; ')}`);
         }
+        if (p.recommendation) {
+          doc.font('Helvetica-Oblique').fontSize(10).fillColor(MUTED).text(`→ ${p.recommendation}`);
+        }
         doc.moveDown(0.4);
       });
 
@@ -74,20 +81,37 @@ export class ReportPdfService {
       doc.font('Helvetica').fontSize(11).fillColor('#334155').text(result.bioDiagnosis);
 
       this.section(doc, 'Rewritten bios');
-      result.rewrittenBios.forEach((b, i) =>
-        doc.font('Helvetica').fontSize(11).fillColor('#334155').text(`${i + 1}. ${b}`).moveDown(0.2),
-      );
+      result.rewrittenBios.forEach((b) => {
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(11)
+          .fillColor(INK)
+          .text(`${b.style}${b.best ? '  (best)' : ''}`);
+        doc.font('Helvetica').fontSize(11).fillColor('#334155').text(b.text).moveDown(0.3);
+      });
 
       if (result.suggestedPrompts.length) {
         this.section(doc, 'Suggested prompts');
         result.suggestedPrompts.forEach((p) => {
           doc.font('Helvetica-Bold').fontSize(11).fillColor(INK).text(p.prompt);
-          doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(p.answer).moveDown(0.2);
+          doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(p.answer);
+          if (p.why) doc.font('Helvetica-Oblique').fontSize(9).fillColor(LIGHT).text(`Why it works: ${p.why}`);
+          doc.moveDown(0.2);
         });
       }
 
       this.section(doc, 'Your action plan');
-      doc.font('Helvetica').fontSize(11).fillColor('#334155').list(result.actionPlan);
+      result.actionPlan.forEach((task, i) => {
+        const meta = [task.minutes != null ? `${task.minutes} min` : null, task.impact ? `${task.impact} impact` : null]
+          .filter(Boolean)
+          .join(' · ');
+        doc
+          .font('Helvetica')
+          .fontSize(11)
+          .fillColor('#334155')
+          .text(`${i + 1}. ${task.task}${meta ? `  (${meta})` : ''}`)
+          .moveDown(0.15);
+      });
 
       doc.end();
     });

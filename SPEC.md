@@ -301,3 +301,85 @@ Sin esto, el tráfico se desperdicia: no se puede aprender de visitantes que no 
 - [ ] Enviar a toda la lista de `Lead` el correo con su descuento del 30% sobre el precio que se le mostró (§12.1.5).
 - [ ] Marcar `Lead.convertedOrderId` cuando un lead compre, para medir la tasa de conversión real de la lista.
 - [ ] Registrar en este SPEC la métrica final: % de intención medida en fake door vs % de compra real. Es el dato más valioso para futuros productos del estudio.
+
+## 13. Identidad del producto y sistema de diseño (dirección aprobada)
+
+### 13.1 Principio de identidad: "Current → Potential" (el hilo conductor)
+**Truly no vende el score — vende la DISTANCIA entre quien eres y quien podrías ser.** Toda pantalla del producto responde primero "¿qué tan lejos estás de tu mejor perfil?" y solo después explica el porqué. Aplica a: landing, teaser gratuito, reporte completo, PDF y correos.
+- Patrón de copy canónico: `Current: 61 → Potential: 84 — "Only 12 improvements away."`
+- El "N improvements" = suma de `suggestions` de las categorías (misma fuente única de verdad de §5.1.2c). Cada número trazable al `resultJson`, siempre.
+- Secuencia de percepción que toda vista debe respetar: (1) ¿Cómo estoy? → score actual. (2) ¿Cuánto puedo mejorar? → potencial. (3) ¿Dónde enfocarme? → categorías. (4) ¿Qué cambio exactamente? → detalle. (5) ¿Qué hago ahora? → plan. (6) ¿Qué gano si actúo? → potencial revisitado + fotos IA.
+
+### 13.2 Dirección visual (propuesta del diseñador — aprobada con podas)
+- **Tema:** modo oscuro con acento cálido (cobre/naranja de Truly) en landing Y reporte — un solo lenguaje visual compartido (dashboard hero, KPI cards, mismo sistema de tarjetas y colores).
+- **Semántica de color:** cobre/naranja = acento de marca y CTAs; **verde SOLO para KEEP/positivo; ámbar SOLO para advertencias**; rojo para scores bajos/before. No usar verde ni ámbar decorativamente.
+- **Sensación objetivo:** honestidad, coaching profesional, autoridad, acciones claras. NO debe sentirse como: demo de IA, muro de texto, app de citas genérica, template SaaS.
+- **Jerarquía sobre uniformidad:** evitar que todas las tarjetas se vean idénticas; la jerarquía visual guía el ojo. Solo 4 elementos dominan cualquier vista: score actual, score potencial, conteo de sugerencias, plan de acción.
+- Los tokens exactos (hex, tipografía, espaciados) los define el entregable del diseñador — este SPEC fija las reglas y comportamientos, no los píxeles.
+
+### 13.3 Podas obligatorias sobre los mockups del diseñador (antes de implementar)
+- "Most popular" → **"Best value"** (sin datos, sin superlativos de popularidad).
+- Corregir typo "Sew it works" → "How it works".
+- "Based on 14 data points" SOLO si el número es real y dinámico del análisis; si es decorativo, se elimina.
+- Footer: la entidad correcta (no "Truly Labs Inc." ni "gyrgroup").
+- La mini-gráfica de tendencia del hero NO puede ser decorativa (no existe historial de scores): se elimina o se convierte explícitamente en ilustración del camino actual→potencial, etiquetada como tal.
+- Regla permanente de §4.1: toda afirmación verificable HOY; se poda cualquier prueba social que un mockup traiga por defecto.
+
+## 14. Reporte v2 — Dashboard de diagnóstico (rediseño completo)
+
+> Fuente: especificación del diseñador ("Truly Report v2 — Complete Product & UI Specification"), incorporada aquí como contrato. Se construye y prueba en ambiente dev. **El rediseño NO agrega información — cambia el orden en que se percibe.** Meta UX: el usuario entiende su situación en <10 segundos (Ver → Entender → Leer detalles solo si quiere).
+
+### 14.1 Estructura del reporte
+Orden de secciones: Hero Dashboard → Overview Widgets → Photo Feedback → Bio Analysis → Rewritten Bios → Prompt Suggestions → Action Plan → Premium Photos → Cierre motivacional + CTA.
+
+### 14.2 Hero Dashboard
+- Izquierda: nombre/edad, "Optimized for {platform}", timestamp real del reporte.
+- Centro: score actual (61). Derecha: score potencial (84).
+- Fila inferior: subscores (Photos/Bio/Prompts) + total de sugerencias.
+- REGLA: total de sugerencias = suma Photos+Bio+Prompts (fuente única, §5.1.2c).
+
+### 14.3 Sidebar sticky (solo desktop)
+Resumen del usuario, score, plataforma, navegación por secciones (Overview/Photos/Bio/Rewritten/Prompts/Plan/AI Photos), botón Share, timestamp. Propósito: reducir carga cognitiva en reportes largos.
+
+### 14.4 Overview Widgets
+Cuatro KPI cards bajo el hero: Score actual · Score potencial · Total sugerencias · Desglose por categoría.
+
+### 14.5 Photo Feedback
+Cada foto = una tarjeta individual (thumbnail, badge KEEP/CONSIDER DROPPING, score, fortalezas, debilidades, recomendación). Scroll horizontal aceptable. El usuario COMPARA visualmente, no lee párrafos.
+
+### 14.6 Bio Analysis
+Separar diagnóstico de explicación. Diagnóstico en marcas escaneables (❌ Reads generic / ❌ Lists traits / ❌ Doesn't create replies) seguido de: por qué, impacto esperado, dirección sugerida.
+
+### 14.7 Rewritten Bios
+Tarjetas (no texto apilado): estilo (Conversation Starter / Funny / Adventure / Confident), preview, rating, botón Copiar, badge BEST opcional. El usuario identifica de inmediato cuál bio encaja con su personalidad.
+
+### 14.8 Prompt Suggestions
+Cada prompt = recomendación estructurada: Prompt → Respuesta esperada → Por qué funciona. El razonamiento de la IA se hace visible.
+
+### 14.9 Action Plan
+Párrafos → tareas accionables. Cada tarea: prioridad, tiempo estimado, impacto esperado (ej.: "Replace Photo 3 · 5 minutes · High impact").
+
+### 14.10 Premium Photos
+No solo galería: cada foto generada muestra escenario, score, botón de descarga, y atributos (iluminación, expresión, outfit). El usuario sabe de inmediato cuál debe ser su primera foto de perfil.
+
+### 14.11 Cierre del reporte
+Termina en motivación: Current → Potential + "You only need N improvements." CTA primario: Generate AI Photos (si no es premium). CTA secundario: Download PDF.
+
+### 14.12 Mobile
+Sidebar → navegación horizontal; overview → grid 2×2; tarjetas de fotos → scroll horizontal. El dashboard sigue siendo lo primero que se ve.
+
+### 14.13 Arquitectura future-ready (diseñar el layout para soportar, NO construir aún)
+Reportes históricos · evolución del score · tareas completadas · bios guardadas · A/B de bios · re-ejecutar una sola sección · historial de generaciones de fotos. Estas features quedan explícitamente FUERA de v2 — el layout solo debe permitirlas sin otro rediseño.
+
+### 14.14 Principio final
+El rediseño no agrega más IA — hace que el diagnóstico se sienta valioso. El usuario debe terminar pensando: "Sé exactamente qué está mal. Sé exactamente qué hacer. Veo claramente qué tan cerca estoy de un perfil mucho mejor." **Esa sensación — no el score — es el producto.**
+
+### 14.15 Criterios de aceptación del Reporte v2
+- [ ] Hero dashboard con current/potential/subscores/total, todo trazable al `resultJson`.
+- [ ] Total de sugerencias = suma de categorías en TODAS las vistas (hero, widgets, sidebar, cierre).
+- [ ] Fotos como tarjetas comparables; bios como tarjetas con copiar; prompts estructurados; plan como tareas con prioridad/tiempo/impacto.
+- [ ] Semántica de color respetada (verde solo KEEP, ámbar solo warnings).
+- [ ] Mobile: dashboard primero, navegación horizontal, grid 2×2, scroll horizontal de fotos.
+- [ ] Sample de Mateo (`/sample`) migrado al v2 — la paridad sample↔real se mantiene (mismo componente).
+- [ ] Legible y escaneable en modo oscuro: ningún bloque de texto corrido largo; todo en tarjetas/marcas.
+- [ ] Cero elementos decorativos con apariencia de dato (gráficas sin datos reales, contadores inventados).
