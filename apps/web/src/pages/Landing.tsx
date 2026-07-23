@@ -68,13 +68,9 @@ export function Landing() {
               <span className="lbl">Your potential ✦</span>
               <span className="val">91<small>/100</small></span>
               <p>Great profiles get more right swipes and better conversations.</p>
-              <svg className="mk-r2-curve" viewBox="0 0 120 34" aria-hidden="true">
-                <defs>
-                  <marker id="ah-l" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto">
-                    <path d="M0,0 L7,3.5 L0,7 Z" fill="var(--win)" />
-                  </marker>
-                </defs>
-                <path d="M6,28 Q74,28 106,9" fill="none" stroke="var(--win)" strokeWidth="2.5" strokeLinecap="round" markerEnd="url(#ah-l)" />
+              <svg className="mk-r2-curve" viewBox="0 0 120 32" aria-hidden="true">
+                <path d="M4,28 C42,26 68,13 110,5" fill="none" stroke="var(--win)" strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="110" cy="5" r="3.5" fill="var(--win)" />
               </svg>
             </div>
           </div>

@@ -254,15 +254,12 @@ function ScoreRing({ label, value, tone }: { label: string; value: number; tone:
 }
 
 function PotentialCurve() {
-  // Flecha/arco current→potencial (SPEC §13.3): NO una curva tipo bolsa de valores.
+  // Línea ascendente suave (progreso current→potencial): una sola curva limpia
+  // que sube con un punto al final. No una flecha, no una gráfica jagged de bolsa.
   return (
-    <svg className="mk-r2-curve" viewBox="0 0 120 34" aria-hidden="true">
-      <defs>
-        <marker id="ah-r" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto">
-          <path d="M0,0 L7,3.5 L0,7 Z" fill="var(--win)" />
-        </marker>
-      </defs>
-      <path d="M6,28 Q74,28 106,9" fill="none" stroke="var(--win)" strokeWidth="2.5" strokeLinecap="round" markerEnd="url(#ah-r)" />
+    <svg className="mk-r2-curve" viewBox="0 0 120 32" aria-hidden="true">
+      <path d="M4,28 C42,26 68,13 110,5" fill="none" stroke="var(--win)" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="110" cy="5" r="3.5" fill="var(--win)" />
     </svg>
   );
 }

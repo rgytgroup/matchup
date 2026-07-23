@@ -626,6 +626,10 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .mk-legal .prose strong { color: var(--ink); }
 
 a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--honey); outline-offset: 3px; border-radius: 4px; }
+/* Sin outline azul por defecto en foco de mouse/programático (los anillos de score no son interactivos) */
+:focus:not(:focus-visible) { outline: none; }
+.mk-l2-ring .ring, .mk-l2-ring .ring svg, .mk-r2-ring .ring, .mk-r2-ring .ring svg,
+.mk-l2-ring .ring:focus, .mk-r2-ring .ring:focus { outline: none; box-shadow: none; }
 
 @media (max-width: 860px) {
   .mk-hero { grid-template-columns: 1fr; gap: 2.4rem; padding: 2.8rem 0 2rem; }
