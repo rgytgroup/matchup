@@ -16,13 +16,25 @@ export function clientMeta(): { source?: string; device: string; country?: strin
   return { source, device, country };
 }
 
-/** Registra un evento de conversión (fire-and-forget, no bloquea la UI). */
+/**
+ * Registra un evento de conversión. Se difiere a idle y usa `keepalive` para NO
+ * quedar en el critical path de carga (el API en Railway puede tener cold-start);
+ * `keepalive` garantiza que el evento se envíe aunque la página navegue enseguida.
+ */
 export function track(type: string, extra?: { variant?: string }): void {
-  void fetch(`${API_URL}/track`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, ...clientMeta(), ...extra }),
-  }).catch(() => undefined);
+  const body = JSON.stringify({ type, ...clientMeta(), ...extra });
+  const send = () => {
+    void fetch(`${API_URL}/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true,
+    }).catch(() => undefined);
+  };
+  const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void })
+    .requestIdleCallback;
+  if (typeof ric === 'function') ric(send, { timeout: 2000 });
+  else setTimeout(send, 600);
 }
 
 /** Config pública (modo puerta falsa / A-B de precio). SPEC §12. */

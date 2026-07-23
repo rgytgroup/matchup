@@ -84,7 +84,7 @@ export function Landing() {
       <section className="mk-band" id="what">
         <div className="mk-wrap">
           <div className="mk-card mk-l2-features">
-            <p className="mk-eyebrow" style={{ textAlign: 'center' }}>What you get</p>
+            <h2 className="mk-eyebrow" style={{ textAlign: 'center' }}>What you get</h2>
             <div className="grid">
               {WHAT_YOU_GET.map((f) => (
                 <div key={f.t} className="feat">

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://truly.dating/sitemap.xml

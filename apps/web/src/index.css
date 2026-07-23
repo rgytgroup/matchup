@@ -15,7 +15,7 @@
   --card-2: #2C2633;      /* surface-elevated (hero/sidebar/modal) */
   --ink: #F7F4F0;         /* text-primary */
   --ink-soft: #B4ADB8;    /* text-secondary */
-  --ink-faint: #8C8591;   /* text-tertiary */
+  --ink-faint: #A29BAA;   /* text-tertiary (AA ≥4.5:1 sobre card-2) */
   --line: #3A3443;        /* border */
   --honey: #D9872A;       /* accent (cobre) */
   --honey-deep: #E59A43;  /* accent-hover */
@@ -26,7 +26,7 @@
   --amber: #E2A33A;       /* warning / DROP */
   --amber-wash: rgba(226, 163, 58, .15);
   --coral: #D05C5C;
-  --pen: #D05C5C;         /* danger (rojo apagado) */
+  --pen: #E67878;         /* danger (rojo legible sobre oscuro, AA) */
   --pen-wash: rgba(208, 92, 92, .15);
   --plum-glow: #2C2633;
   --shadow: 24px 34px 70px -34px rgba(0, 0, 0, .55);
@@ -37,9 +37,9 @@
 }
 :root[data-theme="dark"] {
   --ground: #19161D; --ground-2: #1E1A24; --card: #241F29; --card-2: #2C2633; --ink: #F7F4F0; --ink-soft: #B4ADB8;
-  --ink-faint: #8C8591; --line: #3A3443; --honey: #D9872A; --honey-deep: #E59A43; --honey-pressed: #BD7220;
+  --ink-faint: #A29BAA; --line: #3A3443; --honey: #D9872A; --honey-deep: #E59A43; --honey-pressed: #BD7220;
   --honey-wash: rgba(217, 135, 42, .16); --win: #43C07B; --win-wash: rgba(67, 192, 123, .15); --amber: #E2A33A;
-  --amber-wash: rgba(226, 163, 58, .15); --coral: #D05C5C; --pen: #D05C5C; --pen-wash: rgba(208, 92, 92, .15);
+  --amber-wash: rgba(226, 163, 58, .15); --coral: #D05C5C; --pen: #E67878; --pen-wash: rgba(208, 92, 92, .15);
   --plum-glow: #2C2633; --shadow: 24px 34px 70px -34px rgba(0, 0, 0, .55);
 }
 /* Variante clara (para quien prefiera light / toggle) — mismo lenguaje cobre. */
