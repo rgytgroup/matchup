@@ -42,9 +42,12 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="dot" aria-hidden="true" />
           </Link>
           <nav className="mk-nav">
-            <a className="link mk-hide-sm" href="/#report">
-              The report
+            <a className="link mk-hide-sm" href="/#how">
+              How it works
             </a>
+            <Link className="link mk-hide-sm" to="/sample">
+              Sample report
+            </Link>
             <a className="link mk-hide-sm" href="/#pricing">
               {t.nav.pricing}
             </a>

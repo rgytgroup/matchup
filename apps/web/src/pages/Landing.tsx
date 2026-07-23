@@ -1,359 +1,234 @@
-import { useEffect, type CSSProperties } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TIERS } from '@matchup/shared';
-import { useI18n } from '../i18n';
 import { Layout } from '../components/Layout';
 import { track } from '../api';
 
+const RING = 2 * Math.PI * 42;
+
 const FAQ: Array<{ q: string; a: string }> = [
-  {
-    q: 'Is this a subscription?',
-    a: 'No. Truly is a one-time purchase. No recurring charges, ever.',
-  },
-  {
-    q: 'What exactly do I get?',
-    a: 'An overall score, a score for each photo, a bio diagnosis, three rewritten bios, suggested prompts, and a 5-step action plan. The premium tier adds 30 new AI photos of you.',
-  },
-  {
-    q: 'How do the AI photos work?',
-    a: 'You upload photos you already have; we generate 30 of you in better settings. We change context, clothing and lighting — never your actual features.',
-  },
-  {
-    q: 'Can I get a refund?',
-    a: "Yes. If you're not satisfied, request a refund within 7 days.",
-  },
-  {
-    q: 'What happens to my photos?',
-    a: "They're used only to build your report, and everything is deleted after 30 days.",
-  },
+  { q: 'Is this a subscription?', a: 'No. Truly is a one-time purchase. No recurring charges, ever.' },
+  { q: 'What exactly do I get?', a: 'An overall score, a score for each photo, a bio diagnosis, three rewritten bios, suggested prompts, and a 5-step action plan. The premium tier adds 30 new AI photos of you.' },
+  { q: 'How do the AI photos work?', a: 'You upload photos you already have; we generate 30 of you in better settings. We change context, clothing and lighting — never your actual features.' },
+  { q: 'Can I get a refund?', a: "Yes. If you're not satisfied, request a refund within 7 days." },
+  { q: 'What happens to my photos?', a: "They're used only to build your report, and everything is deleted after 30 days." },
+];
+
+const WHAT_YOU_GET = [
+  { ic: '◎', t: 'Honest score', d: "A clear score and a plan that shows you what's holding you back." },
+  { ic: '▣', t: 'Photo-by-photo feedback', d: 'Know which photos to keep, which to rethink, and why.' },
+  { ic: '✎', t: 'Stronger bio & prompts', d: 'Rewritten bios and prompt ideas that sound like you, just better.' },
+  { ic: '☑', t: 'Action plan', d: 'A 5-step plan you can follow today to see real results.' },
+  { ic: '✦', t: 'AI photos (premium)', d: '40–60 new, natural photos of you in your best light.' },
 ];
 
 export function Landing() {
-  const t = useI18n();
   const audit = TIERS.AUDIT.priceUsd.toFixed(2);
   const plus = TIERS.AUDIT_PLUS_PHOTOS.priceUsd.toFixed(2);
 
   useEffect(() => {
     track('landing.visit');
-    track('visit'); // embudo de la puerta falsa (SPEC §12.2.1)
+    track('visit');
   }, []);
 
   return (
     <Layout>
-      {/* HERO */}
-      <div className="mk-hero-band">
-        <section className="mk-wrap mk-hero">
-          <div>
-            <p className="mk-eyebrow">{t.landing.heroEyebrow}</p>
-            <h1>
-              {t.landing.heroTitle} <span className="glow">{t.landing.heroTitleEmph}</span>
-            </h1>
-            <p className="mk-lede">{t.landing.heroSubtitle}</p>
-            <div className="mk-cta-row">
-              <Link className="mk-btn" to="/start">
-                {t.landing.heroCta} — ${audit}
-              </Link>
-              <Link className="mk-btn ghost" to="/sample">
-                {t.landing.sampleCta}
-              </Link>
-            </div>
-            <p className="mk-micro">
-              One-time purchase · <b>7-day refund</b> · photos deleted after 30 days.
-            </p>
+      {/* ---- HERO ---- */}
+      <section className="mk-wrap mk-l2-hero">
+        <div className="mk-l2-hero-copy">
+          <p className="mk-eyebrow">Honest advice · real results</p>
+          <h1>
+            Your best profile, <span className="glow">on purpose.</span>
+          </h1>
+          <p className="mk-lede">
+            Screenshot your dating profile and get a coach&apos;s honest audit — scores, a plan,
+            rewritten bios, and new photos that actually match you.
+          </p>
+          <div className="mk-cta-row">
+            <Link className="mk-btn" to="/start">Audit my profile — ${audit}</Link>
+            <Link className="mk-btn ghost" to="/sample">See sample report</Link>
           </div>
+          <p className="mk-micro">One-time purchase · <b>7-day refund</b> · photos deleted after 30 days.</p>
+        </div>
 
-          <figure className="mk-glass" aria-label="A dating profile with a coaching score">
-            <div
-              className="media"
-              style={{
-                background:
-                  "linear-gradient(to top, rgba(0,0,0,.5), rgba(0,0,0,0) 45%), url('/persona/hero.jpg') center 22% / cover",
-              }}
-            >
-              <span className="chip keep">keep ✓</span>
-              <span className="chip swap">swap</span>
-              <span className="name">Mateo, 34</span>
-              <div className="mk-ringwrap">
+        {/* Dashboard card */}
+        <div className="mk-l2-dash">
+          <div className="top">
+            <div className="mk-l2-ring">
+              <span className="lbl">Your score</span>
+              <div className="ring">
                 <svg viewBox="0 0 96 96" aria-hidden="true">
-                  <circle className="track2" cx="48" cy="48" r="42" />
-                  <circle className="prog" cx="48" cy="48" r="42" />
+                  <circle className="t" cx="48" cy="48" r="42" />
+                  <circle className="p" cx="48" cy="48" r="42" style={{ strokeDashoffset: RING * (1 - 64 / 100) }} />
                 </svg>
-                <span className="n">61</span>
+                <span className="n">64<small>/100</small></span>
               </div>
             </div>
-            <figcaption className="caption">
-              <p className="k">Where you stand</p>
-              <p className="coachline">
-                <span className="badge">On the way up</span> 61 → 85 with 3 quick wins
-              </p>
-              <p className="sub">
-                Strong lead photo. Let&apos;s fix the bio and swap two shots — you&apos;ll feel the
-                difference in a week.
-              </p>
-            </figcaption>
-          </figure>
-        </section>
-      </div>
-
-      {/* SAMPLE REPORT */}
-      <section className="mk-band" id="report">
-        <div className="mk-wrap">
-          <div className="mk-sec-head">
-            <p className="mk-eyebrow">{t.landing.reportEyebrow}</p>
-            <h2>{t.landing.reportTitle}</h2>
-            <p>{t.landing.reportIntro}</p>
-          </div>
-
-          <div className="mk-report">
-            <div className="aside">
-              <span className="mk-stamp">Sample report</span>
-              <div style={{ fontWeight: 700, marginTop: '-.6rem' }}>Mateo, 34 · Tinder</div>
-              <div className="mk-scorewrap">
-                <div className="mk-ring2">
-                  <svg viewBox="0 0 96 96" aria-hidden="true">
-                    <circle className="t" cx="48" cy="48" r="42" />
-                    <circle className="p" cx="48" cy="48" r="42" />
-                  </svg>
-                  <span className="n">61</span>
-                </div>
-                <div className="meta">
-                  <div className="to">Climbing to 85</div>
-                  <div className="cap">3 quick wins away</div>
-                </div>
-              </div>
-              <div className="mk-barline">
-                <Bar label="Photo 1" value={82} good />
-                <Bar label="Photo 2" value={44} />
-                <Bar label="Photo 3" value={38} />
-                <Bar label="Bio" value={55} />
-                <Bar label="Prompts" value={70} good />
-              </div>
-            </div>
-
-            <div className="body">
-              <div className="mk-diag">
-                <h4>Diagnosis</h4>
-                <p>
-                  Your first photo is doing all the work — sharp, warm, real eye contact. Photos 2
-                  and 3 repeat the same angle in dim light. Your bio lists traits instead of showing
-                  them, so it reads like everyone else&apos;s.
-                </p>
-              </div>
-              <div className="mk-diag">
-                <h4>
-                  <span className="pen-ic">✎</span>Bio — marked up
-                </h4>
-                <div className="mk-rewrite">
-                  <p className="old">
-                    &quot;I like <s>good conversation, travel, and good food.</s>&quot;
-                  </p>
-                  <p className="mk-pen-note">
-                    Everyone writes this. What&apos;s a story only you could tell?
-                  </p>
-                  <p className="new">
-                    &quot;I build bridges for a living and lose every argument to my rescue dog. Ask
-                    me about the worst empanada I&apos;ve had in 12 countries.&quot;
-                  </p>
-                </div>
-              </div>
-              <div className="mk-diag">
-                <h4>Your 5-step action plan</h4>
-                <ol className="mk-plan">
-                  <li>Replace Photo 3 with a full-body shot in daylight.</li>
-                  <li>Cut Photo 2 — it duplicates Photo 1&apos;s angle.</li>
-                  <li>Swap the trait-list bio for the rewrite above.</li>
-                  <li>Add a prompt about the empanada story — it invites a reply.</li>
-                  <li>Lead with the photo scored 82. It&apos;s your opener.</li>
-                </ol>
-              </div>
+            <div className="pot">
+              <span className="lbl">Your potential ✦</span>
+              <span className="val">91<small>/100</small></span>
+              <p>Great profiles get more right swipes and better conversations.</p>
+              <svg className="mk-r2-curve" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M2,34 C40,32 60,18 118,6" fill="none" stroke="var(--win)" strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="118" cy="6" r="3.5" fill="var(--win)" />
+              </svg>
             </div>
           </div>
-          <div className="mk-report-more">
-            <Link className="mk-btn ghost" to="/sample">
-              See Mateo&apos;s full report →
-            </Link>
+          <div className="kpis">
+            <MiniKpi label="Photos" score={72} sug={5} />
+            <MiniKpi label="Bio" score={48} sug={5} />
+            <MiniKpi label="Prompts" score={61} sug={4} />
+          </div>
+          <div className="foot">
+            <span>✦ Based on your photos, bio &amp; prompts</span>
+            <span>Optimized for Tinder 🔥</span>
           </div>
         </div>
       </section>
 
-      {/* AI PHOTOS */}
-      <section className="mk-band alt">
+      {/* ---- WHAT YOU GET ---- */}
+      <section className="mk-band" id="what">
         <div className="mk-wrap">
-          <div className="mk-sec-head">
-            <p className="mk-eyebrow">{t.landing.photosEyebrow}</p>
-            <h2>{t.landing.photosTitle}</h2>
-            <p>{t.landing.photosIntro}</p>
-          </div>
-          <div className="mk-plates">
-            <div className="mk-plate" style={plate('golden.jpg')}>
-              <span>Golden hour</span>
-            </div>
-            <div className="mk-plate" style={plate('cafe.jpg')}>
-              <span>Warm café</span>
-            </div>
-            <div className="mk-plate" style={plate('studio.jpg')}>
-              <span>Studio</span>
-            </div>
-            <div className="mk-plate" style={plate('city.jpg')}>
-              <span>City evening</span>
-            </div>
-          </div>
-          <p className="mk-plate-note">Illustrative examples, generated with AI.</p>
-          <p className="mk-guard">
-            <b>{t.landing.photosGuardLabel}</b>&nbsp;{t.landing.photosGuardText}
-          </p>
-        </div>
-      </section>
-
-      {/* STEPS */}
-      <section className="mk-band">
-        <div className="mk-wrap">
-          <div className="mk-sec-head">
-            <p className="mk-eyebrow">{t.landing.stepsEyebrow}</p>
-            <h2>{t.landing.stepsTitle}</h2>
-          </div>
-          <div className="mk-steps">
-            <Step no={1} title={t.landing.step1Title} body={t.landing.step1Body} />
-            <Step no={2} title={t.landing.step2Title} body={t.landing.step2Body} />
-            <Step no={3} title={t.landing.step3Title} body={t.landing.step3Body} />
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section className="mk-band alt" id="pricing">
-        <div className="mk-wrap">
-          <div className="mk-sec-head">
-            <p className="mk-eyebrow">{t.pricing.eyebrow}</p>
-            <h2>{t.pricing.title}</h2>
-            <p>{t.pricing.intro}</p>
-          </div>
-          <div className="mk-prices">
-            <div className="mk-price">
-              <h3>{t.pricing.audit}</h3>
-              <div className="amt">
-                ${audit} <small>{t.pricing.oneTime}</small>
+          <p className="mk-eyebrow" style={{ textAlign: 'center' }}>What you get</p>
+          <div className="mk-l2-features">
+            {WHAT_YOU_GET.map((f) => (
+              <div key={f.t} className="feat">
+                <span className="ic">{f.ic}</span>
+                <h3>{f.t}</h3>
+                <p>{f.d}</p>
               </div>
-              <ul>
-                <li>{t.pricing.auditPerk1}</li>
-                <li>{t.pricing.auditPerk2}</li>
-                <li>{t.pricing.auditPerk3}</li>
-                <li>{t.pricing.auditPerk4}</li>
-              </ul>
-              <Link className="mk-btn ghost" to="/start?tier=AUDIT">
-                {t.pricing.ctaAudit}
-              </Link>
-            </div>
-            <div className="mk-price feat">
-              <span className="ribbon">{t.pricing.ribbon}</span>
-              <h3>{t.pricing.auditPlus}</h3>
-              <div className="amt">
-                ${plus} <small>{t.pricing.oneTime}</small>
-              </div>
-              <ul>
-                <li>{t.pricing.plusPerk1}</li>
-                <li>
-                  <strong>{t.pricing.plusPerk2}</strong>
-                </li>
-                <li>{t.pricing.plusPerk3}</li>
-                <li>{t.pricing.plusPerk4}</li>
-              </ul>
-              <Link className="mk-btn" to="/start?tier=AUDIT_PLUS_PHOTOS">
-                {t.pricing.ctaPlus}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* TRUST */}
-      <section className="mk-band">
-        <div className="mk-wrap">
-          <div className="mk-sec-head">
-            <p className="mk-eyebrow">{t.landing.trustEyebrow}</p>
-            <h2>{t.landing.trustTitle}</h2>
-            <p>{t.landing.trustIntro}</p>
-          </div>
-          <div className="mk-trust">
-            <Promise ic="🔓" title={t.promises.noSubsTitle} body={t.promises.noSubsBody} />
-            <Promise ic="↩️" title={t.promises.refundTitle} body={t.promises.refundBody} />
-            <Promise ic="🗑️" title={t.promises.deleteTitle} body={t.promises.deleteBody} />
-            <Promise ic="🙂" title={t.promises.neverTitle} body={t.promises.neverBody} />
-          </div>
-          <p className="mk-note">
-            {t.landing.trustNoteLead}
-            <span className="hl">{t.landing.trustNote}</span>
-          </p>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="mk-band alt" id="faq">
-        <div className="mk-wrap">
-          <div className="mk-sec-head">
-            <p className="mk-eyebrow">FAQ</p>
-            <h2>{t.landing.faqTitle}</h2>
-          </div>
-          <div className="mk-faq">
-            {FAQ.map((item, i) => (
-              <details key={item.q} open={i === 0}>
-                <summary>{item.q}</summary>
-                <p>{item.a}</p>
-              </details>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FINAL CTA */}
+      {/* ---- BEFORE / AFTER ---- */}
+      <section className="mk-band alt">
+        <div className="mk-wrap mk-l2-ba">
+          <div className="photos">
+            <div className="ph before" style={{ background: "url('/persona/city.jpg') center/cover" }}><span>BEFORE</span></div>
+            <div className="ph after" style={{ background: "url('/persona/studio.jpg') center/cover" }}><span className="g">AFTER</span></div>
+          </div>
+          <div className="mk-card compare">
+            <div className="col">
+              <div className="hd"><span className="ttl">Before</span><span className="badge red">58/100</span></div>
+              <BaRow label="Photos" v={45} tone="red" />
+              <BaRow label="Bio" v={40} tone="red" />
+              <BaRow label="Prompts" v={50} tone="red" />
+            </div>
+            <span className="arrow">→</span>
+            <div className="col">
+              <div className="hd"><span className="ttl">After <small>(with our plan)</small></span><span className="badge green">94/100</span></div>
+              <BaRow label="Photos" v={91} tone="green" />
+              <BaRow label="Bio" v={90} tone="green" />
+              <BaRow label="Prompts" v={94} tone="green" />
+            </div>
+          </div>
+          <p className="mk-hint" style={{ gridColumn: '1 / -1', textAlign: 'center', marginTop: '.5rem' }}>
+            Example results from a sample profile (Mateo). Your results will be based on your profile.
+          </p>
+        </div>
+      </section>
+
+      {/* ---- HOW IT WORKS ---- */}
+      <section className="mk-band" id="how">
+        <div className="mk-wrap">
+          <p className="mk-eyebrow">How it works</p>
+          <h2 className="mk-l2-h2">Three simple steps.</h2>
+          <div className="mk-l2-steps">
+            <div className="mk-card step"><span className="no">1</span><h3>Screenshot your profile</h3><p>Upload screenshots of your profile, bio, and prompts. We&apos;ll extract everything for you.</p></div>
+            <div className="mk-card step"><span className="no">2</span><h3>We analyze &amp; grade it</h3><p>Our AI coach reviews your photos, bio, and prompts to find what&apos;s working and what&apos;s not.</p></div>
+            <div className="mk-card step"><span className="no">3</span><h3>Get your report</h3><p>Your score, feedback, rewrites, and a 5-step plan to level up your profile.</p></div>
+            <div className="mk-card step privacy"><h3>🛡 Privacy first, always.</h3><p>We only analyze your profile. Your photos are deleted automatically after 30 days. No data is shared. Ever.</p></div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---- PRICING ---- */}
+      <section className="mk-band alt" id="pricing">
+        <div className="mk-wrap">
+          <p className="mk-eyebrow">Pricing</p>
+          <h2 className="mk-l2-h2">One payment. Pick your depth.</h2>
+          <div className="mk-prices">
+            <div className="mk-price">
+              <h3>Profile Audit</h3>
+              <div className="amt">${audit} <small>one-time</small></div>
+              <ul>
+                <li>Overall score + improvement plan</li>
+                <li>Photo-by-photo feedback</li>
+                <li>Stronger bio &amp; prompt ideas</li>
+                <li>Your 5-step action plan</li>
+              </ul>
+              <Link className="mk-btn ghost" to="/start?tier=AUDIT">Choose Audit</Link>
+            </div>
+            <div className="mk-price feat">
+              <span className="ribbon">Best value</span>
+              <h3>Audit + AI Photos</h3>
+              <div className="amt">${plus} <small>one-time</small></div>
+              <ul>
+                <li>Everything in the audit</li>
+                <li><strong>30 brand-new AI photos of you</strong></li>
+                <li>Hand-picked, your best light</li>
+                <li>Your real features, always kept</li>
+              </ul>
+              <Link className="mk-btn" to="/start?tier=AUDIT_PLUS_PHOTOS">Choose Audit + Photos</Link>
+            </div>
+            <div className="mk-card mk-l2-honest">
+              <h3>Honest beats flattering.</h3>
+              <p>We don&apos;t tell you what you want to hear. We tell you what works.</p>
+              <div className="promises">
+                <div><span className="ic">🔓</span><b>No subscriptions</b><span>One payment.</span></div>
+                <div><span className="ic">↩️</span><b>7-day refund</b><span>Ask within 7 days.</span></div>
+                <div><span className="ic">🗑️</span><b>Photos deleted</b><span>After 30 days.</span></div>
+                <div><span className="ic">🙂</span><b>Never altered</b><span>Your real features.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---- FAQ ---- */}
+      <section className="mk-band" id="faq">
+        <div className="mk-wrap">
+          <p className="mk-eyebrow">FAQ</p>
+          <h2 className="mk-l2-h2">Straight answers.</h2>
+          <div className="mk-faq">
+            {FAQ.map((item, i) => (
+              <details key={item.q} open={i === 0}><summary>{item.q}</summary><p>{item.a}</p></details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---- FINAL ---- */}
       <section className="mk-final">
         <div className="mk-wrap">
-          <p className="mk-eyebrow" style={{ textAlign: 'center' }}>
-            Ready?
-          </p>
-          <h2>{t.landing.finalTitle}</h2>
-          <p>{t.landing.finalSub}</p>
-          <Link className="mk-btn" to="/start">
-            {t.landing.heroCta} — ${audit}
-          </Link>
+          <p className="mk-eyebrow" style={{ textAlign: 'center' }}>Ready?</p>
+          <h2>See what your profile really says.</h2>
+          <p>Ten minutes. One honest report. Better matches.</p>
+          <Link className="mk-btn" to="/start">Audit my profile — ${audit}</Link>
         </div>
       </section>
     </Layout>
   );
 }
 
-function plate(file: string): CSSProperties {
-  return { background: `url('/persona/${file}') center / cover` };
-}
-
-function Bar({ label, value, good }: { label: string; value: number; good?: boolean }) {
+function MiniKpi({ label, score, sug }: { label: string; score: number; sug: number }) {
   return (
-    <div className="mk-bar">
-      <span>{label}</span>
-      <span className="track">
-        <span className={`fill${good ? ' g' : ''}`} style={{ width: `${value}%` }} />
-      </span>
-      <span className="v">{value}</span>
+    <div className="mk-l2-mkpi">
+      <span className="lbl">{label}</span>
+      <span className="sc">{score}<small>/100</small></span>
+      <span className="sug">{sug} suggestions</span>
     </div>
   );
 }
 
-function Step({ no, title, body }: { no: number; title: string; body: string }) {
+function BaRow({ label, v, tone }: { label: string; v: number; tone: 'red' | 'green' }) {
   return (
-    <div className="mk-step">
-      <div className="no">{no}</div>
-      <h3>{title}</h3>
-      <p>{body}</p>
-    </div>
-  );
-}
-
-function Promise({ ic, title, body }: { ic: string; title: string; body: string }) {
-  return (
-    <div className="mk-promise">
-      <div className="ic">{ic}</div>
-      <h4>{title}</h4>
-      <p>{body}</p>
+    <div className="mk-l2-barow">
+      <span className="lbl">{label}</span>
+      <span className="track"><span className="fill" style={{ width: `${v}%`, background: tone === 'green' ? 'var(--win)' : 'var(--pen)' }} /></span>
+      <span className="v">{v}</span>
     </div>
   );
 }
