@@ -63,7 +63,7 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .font-mono2 { font-family: var(--font-mono); }
 
 /* ---- primitives ---- */
-.mk-wrap { width: min(100% - 2.5rem, 1080px); margin-inline: auto; }
+.mk-wrap { width: min(100% - 2.5rem, 1240px); margin-inline: auto; }
 .mk-eyebrow { text-transform: uppercase; letter-spacing: .18em; font-size: .74rem; font-weight: 700; color: var(--honey-deep); margin: 0 0 1rem; }
 @media (prefers-color-scheme: dark) { .mk-eyebrow { color: var(--honey); } }
 :root[data-theme="dark"] .mk-eyebrow { color: var(--honey); }
@@ -435,20 +435,40 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 /* steps */
 .mk-l2-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; align-items: stretch; }
 .mk-l2-steps .step { display: flex; flex-direction: column; }
-.mk-l2-steps .step .no { width: 2rem; height: 2rem; border-radius: 999px; border: 1px solid var(--honey); color: var(--honey); font-weight: 800; display: grid; place-items: center; margin-bottom: .8rem; }
-.mk-l2-steps .step h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; margin: 0 0 .4rem; }
-.mk-l2-steps .step p { margin: 0 0 .3rem; font-size: .9rem; color: var(--ink-soft); }
+.mk-l2-steps .step .no { width: 2rem; height: 2rem; border-radius: 999px; border: 1px solid var(--honey); color: var(--honey); font-weight: 800; display: grid; place-items: center; margin-bottom: .8rem; flex: none; }
+.mk-l2-steps .step h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; margin: 0 0 .4rem; }
+.mk-l2-steps .step p { margin: 0 0 .3rem; font-size: .88rem; color: var(--ink-soft); }
+/* Cuerpo: texto a la izquierda + ilustración a la derecha (como el mockup) */
+.mk-l2-steps .step .body { display: grid; grid-template-columns: 1fr auto; gap: .8rem; align-items: center; flex: 1; }
+.mk-l2-steps .step .body .txt { min-width: 0; }
+.mk-l2-steps .step .body .txt p:last-child { margin-bottom: 0; }
+.mk-l2-steps .step .body .ill { flex: none; }
+/* Privacy: sin ilustración, ancho completo */
 .mk-l2-steps .step.privacy { border-color: color-mix(in srgb, var(--honey) 55%, var(--line)); }
-.mk-l2-steps .step.privacy h3 { color: var(--honey); display: flex; align-items: center; gap: .4rem; }
-.mk-l2-steps .step .ill { margin-top: auto; padding-top: 1rem; }
-.mk-l2-steps .step .ill.phone span { display: block; width: 96px; height: 172px; margin: 0 auto; border-radius: 18px; border: 3px solid var(--line); box-shadow: var(--shadow); }
-.mk-l2-steps .step .ill.ring { position: relative; width: 96px; height: 96px; margin: 0 auto; display: grid; place-items: center; }
-.mk-l2-steps .step .ill.ring svg { position: absolute; inset: 0; transform: rotate(-90deg); width: 100%; height: 100%; }
-.mk-l2-steps .step .ill.ring .t { fill: none; stroke: var(--line); stroke-width: 8; }
-.mk-l2-steps .step .ill.ring .p { fill: none; stroke: var(--honey); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 264; }
-.mk-l2-steps .step .ill.ring .n { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; }
-.mk-l2-steps .step .ill.chips { display: flex; flex-direction: column; gap: .5rem; }
-.mk-l2-steps .step .ill.chips span { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; font-weight: 600; border: 1px solid var(--line); border-radius: 10px; padding: .5rem .7rem; color: var(--ink-soft); }
+.mk-l2-steps .step.privacy h3 { color: var(--honey); display: flex; align-items: flex-start; gap: .5rem; font-size: 1.15rem; }
+.mk-l2-steps .step.privacy .sh { color: var(--honey); }
+/* Card 1 — teléfono con screenshot de perfil de citas */
+.mk-l2-steps .ill.phone .scr { width: 96px; padding: 4px; border-radius: 16px; border: 3px solid var(--line); background: var(--ground); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px; }
+.mk-l2-steps .ill.phone .main { height: 104px; border-radius: 11px; position: relative; overflow: hidden; }
+.mk-l2-steps .ill.phone .main span { position: absolute; left: 6px; bottom: 5px; color: #fff; font-size: .62rem; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.mk-l2-steps .ill.phone .thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.mk-l2-steps .ill.phone .thumbs span { height: 44px; border-radius: 8px; }
+/* Card 2 — anillo + mini-barras Photos/Bio/Prompts */
+.mk-l2-steps .ill.grade { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+.mk-l2-steps .ill.grade .ring { position: relative; width: 86px; height: 86px; display: grid; place-items: center; flex: none; }
+.mk-l2-steps .ill.grade .ring svg { position: absolute; inset: 0; transform: rotate(-90deg); width: 100%; height: 100%; }
+.mk-l2-steps .ill.grade .ring .t { fill: none; stroke: var(--line); stroke-width: 8; }
+.mk-l2-steps .ill.grade .ring .p { fill: none; stroke: var(--honey); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 264; }
+.mk-l2-steps .ill.grade .ring .n { font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; }
+.mk-l2-steps .ill.grade .bars { display: flex; flex-direction: column; gap: .32rem; }
+.mk-l2-steps .ill.grade .bars > div { display: flex; align-items: center; gap: .4rem; font-size: .62rem; color: var(--ink-faint); }
+.mk-l2-steps .ill.grade .bars > div > span:first-child { width: 3.1rem; text-align: right; }
+.mk-l2-steps .ill.grade .bars .b { color: var(--pen); }
+.mk-l2-steps .ill.grade .bars .bar { display: block; width: 44px; height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.mk-l2-steps .ill.grade .bars .bar i { display: block; height: 100%; background: var(--honey); border-radius: 99px; }
+/* Card 3 — chips al lado del texto */
+.mk-l2-steps .ill.chips { display: flex; flex-direction: column; gap: .5rem; }
+.mk-l2-steps .ill.chips span { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; font-size: .78rem; font-weight: 600; border: 1px solid var(--line); border-radius: 10px; padding: .5rem .7rem; color: var(--ink-soft); }
 
 /* honest card */
 .mk-l2-honest h3 { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; margin: 0 0 .4rem; }
@@ -654,7 +674,8 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 /* Sin outline azul por defecto en foco de mouse/programático (los anillos de score no son interactivos) */
 :focus:not(:focus-visible) { outline: none; }
 .mk-l2-ring .ring, .mk-l2-ring .ring svg, .mk-r2-ring .ring, .mk-r2-ring .ring svg,
-.mk-l2-ring .ring:focus, .mk-r2-ring .ring:focus { outline: none; box-shadow: none; }
+.mk-l2-steps .ill.grade .ring, .mk-l2-steps .ill.grade .ring svg,
+.mk-l2-ring .ring:focus, .mk-r2-ring .ring:focus { outline: none; box-shadow: none; border: none; }
 
 @media (max-width: 860px) {
   .mk-hero { grid-template-columns: 1fr; gap: 2.4rem; padding: 2.8rem 0 2rem; }

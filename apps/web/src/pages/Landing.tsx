@@ -132,30 +132,57 @@ export function Landing() {
           <div className="mk-l2-steps">
             <div className="mk-card step">
               <span className="no">1</span>
-              <h3>Screenshot your profile</h3>
-              <p>Upload screenshots of your profile, bio, and prompts. We&apos;ll extract everything for you.</p>
-              <div className="ill phone"><span style={{ background: "url('/persona/hero.jpg') center/cover" }} /></div>
+              <div className="body">
+                <div className="txt">
+                  <h3>Screenshot your profile</h3>
+                  <p>Upload screenshots of your profile, bio, and prompts. We&apos;ll extract everything for you.</p>
+                </div>
+                <div className="ill phone">
+                  <div className="scr">
+                    <div className="main" style={{ background: "url('/persona/hero.jpg') center/cover" }}><span>Mateo, 34</span></div>
+                    <div className="thumbs">
+                      <span style={{ background: "url('/persona/golden.jpg') center/cover" }} />
+                      <span style={{ background: "url('/persona/cafe.jpg') center/cover" }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="mk-card step">
               <span className="no">2</span>
-              <h3>We analyze &amp; grade it</h3>
-              <p>Our AI coach reviews your photos, bio, and prompts to find what&apos;s working and what&apos;s not.</p>
-              <div className="ill ring">
-                <svg viewBox="0 0 96 96" aria-hidden="true">
-                  <circle className="t" cx="48" cy="48" r="42" />
-                  <circle className="p" cx="48" cy="48" r="42" style={{ strokeDashoffset: RING * (1 - 64 / 100) }} />
-                </svg>
-                <span className="n">64</span>
+              <div className="body">
+                <div className="txt">
+                  <h3>We analyze &amp; grade it</h3>
+                  <p>Our AI coach reviews your photos, bio, and prompts to find what&apos;s working and what&apos;s not.</p>
+                </div>
+                <div className="ill grade">
+                  <div className="ring">
+                    <svg viewBox="0 0 96 96" aria-hidden="true">
+                      <circle className="t" cx="48" cy="48" r="42" />
+                      <circle className="p" cx="48" cy="48" r="42" style={{ strokeDashoffset: RING * (1 - 64 / 100) }} />
+                    </svg>
+                    <span className="n">64</span>
+                  </div>
+                  <div className="bars">
+                    <div><span>Photos</span><span className="bar"><i style={{ width: '76%' }} /></span></div>
+                    <div><span className="b">Bio</span><span className="bar"><i style={{ width: '48%', background: 'var(--pen)' }} /></span></div>
+                    <div><span>Prompts</span><span className="bar"><i style={{ width: '61%' }} /></span></div>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="mk-card step">
               <span className="no">3</span>
-              <h3>Get your report</h3>
-              <p>Your score, feedback, rewrites, and a 5-step plan to level up your profile.</p>
-              <div className="ill chips">
-                <span>✎ New bio ideas</span>
-                <span>▣ Photo feedback</span>
-                <span>☑ Action plan</span>
+              <div className="body">
+                <div className="txt">
+                  <h3>Get your report</h3>
+                  <p>Your score, feedback, rewrites, and a 5-step plan to level up your profile.</p>
+                </div>
+                <div className="ill chips">
+                  <span>✎ New bio ideas</span>
+                  <span>▣ Photo feedback</span>
+                  <span>☑ Action plan</span>
+                </div>
               </div>
             </div>
             <div className="mk-card step privacy">
