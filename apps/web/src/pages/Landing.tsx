@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { TIERS } from '@matchup/shared';
 import { Layout } from '../components/Layout';
@@ -15,11 +15,11 @@ const FAQ: Array<{ q: string; a: string }> = [
 ];
 
 const WHAT_YOU_GET = [
-  { ic: '◎', t: 'Honest score', d: "A clear score and a plan that shows you what's holding you back." },
-  { ic: '▣', t: 'Photo-by-photo feedback', d: 'Know which photos to keep, which to rethink, and why.' },
-  { ic: '✎', t: 'Stronger bio & prompts', d: 'Rewritten bios and prompt ideas that sound like you, just better.' },
-  { ic: '☑', t: 'Action plan', d: 'A 5-step plan you can follow today to see real results.' },
-  { ic: '✦', t: 'AI photos (premium)', d: '40–60 new, natural photos of you in your best light.' },
+  { icon: <IconTarget />, t: 'Honest score', d: "A clear score and a plan that shows you what's holding you back." },
+  { icon: <IconImage />, t: 'Photo-by-photo feedback', d: 'Know which photos to keep, which to rethink, and why.' },
+  { icon: <IconPen />, t: 'Stronger bio & prompts', d: 'Rewritten bios and prompt ideas that sound like you, just better.' },
+  { icon: <IconList />, t: 'Action plan', d: 'A 5-step plan you can follow today to see real results.' },
+  { icon: <IconSparkle />, t: 'AI photos (premium)', d: '40–60 new, natural photos of you in your best light.' },
 ];
 
 export function Landing() {
@@ -37,9 +37,7 @@ export function Landing() {
       <section className="mk-wrap mk-l2-hero">
         <div className="mk-l2-hero-copy">
           <p className="mk-eyebrow">Honest advice · real results</p>
-          <h1>
-            Your best profile, <span className="glow">on purpose.</span>
-          </h1>
+          <h1>Your best profile, <span className="glow">on purpose.</span></h1>
           <p className="mk-lede">
             Screenshot your dating profile and get a coach&apos;s honest audit — scores, a plan,
             rewritten bios, and new photos that actually match you.
@@ -51,7 +49,6 @@ export function Landing() {
           <p className="mk-micro">One-time purchase · <b>7-day refund</b> · photos deleted after 30 days.</p>
         </div>
 
-        {/* Dashboard card */}
         <div className="mk-l2-dash">
           <div className="top">
             <div className="mk-l2-ring">
@@ -68,16 +65,13 @@ export function Landing() {
               <span className="lbl">Your potential ✦</span>
               <span className="val">91<small>/100</small></span>
               <p>Great profiles get more right swipes and better conversations.</p>
-              <svg className="mk-r2-curve" viewBox="0 0 120 32" aria-hidden="true">
-                <path d="M4,28 C42,26 68,13 110,5" fill="none" stroke="var(--win)" strokeWidth="2.5" strokeLinecap="round" />
-                <circle cx="110" cy="5" r="3.5" fill="var(--win)" />
-              </svg>
+              <ProgressLine />
             </div>
           </div>
           <div className="kpis">
-            <MiniKpi label="Photos" score={72} sug={5} />
-            <MiniKpi label="Bio" score={48} sug={5} />
-            <MiniKpi label="Prompts" score={61} sug={4} />
+            <MiniKpi label="Photos" score={72} sug={5} icon={<IconImage />} />
+            <MiniKpi label="Bio" score={48} sug={5} icon={<IconPen />} />
+            <MiniKpi label="Prompts" score={61} sug={4} icon={<IconChat />} />
           </div>
           <div className="foot">
             <span>✦ Based on your photos, bio &amp; prompts</span>
@@ -89,21 +83,23 @@ export function Landing() {
       {/* ---- WHAT YOU GET ---- */}
       <section className="mk-band" id="what">
         <div className="mk-wrap">
-          <p className="mk-eyebrow" style={{ textAlign: 'center' }}>What you get</p>
-          <div className="mk-l2-features">
-            {WHAT_YOU_GET.map((f) => (
-              <div key={f.t} className="feat">
-                <span className="ic">{f.ic}</span>
-                <h3>{f.t}</h3>
-                <p>{f.d}</p>
-              </div>
-            ))}
+          <div className="mk-card mk-l2-features">
+            <p className="mk-eyebrow" style={{ textAlign: 'center' }}>What you get</p>
+            <div className="grid">
+              {WHAT_YOU_GET.map((f) => (
+                <div key={f.t} className="feat">
+                  <span className="ic">{f.icon}</span>
+                  <h3>{f.t}</h3>
+                  <p>{f.d}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ---- BEFORE / AFTER ---- */}
-      <section className="mk-band alt">
+      <section className="mk-band">
         <div className="mk-wrap mk-l2-ba">
           <div className="photos">
             <div className="ph before" style={{ background: "url('/persona/city.jpg') center/cover" }}><span>BEFORE</span></div>
@@ -116,7 +112,7 @@ export function Landing() {
               <BaRow label="Bio" v={40} tone="red" />
               <BaRow label="Prompts" v={50} tone="red" />
             </div>
-            <span className="arrow">→</span>
+            <span className="arrow">›</span>
             <div className="col">
               <div className="hd"><span className="ttl">After <small>(with our plan)</small></span><span className="badge green">94/100</span></div>
               <BaRow label="Photos" v={91} tone="green" />
@@ -124,9 +120,7 @@ export function Landing() {
               <BaRow label="Prompts" v={94} tone="green" />
             </div>
           </div>
-          <p className="mk-hint" style={{ gridColumn: '1 / -1', textAlign: 'center', marginTop: '.5rem' }}>
-            Example results from a sample profile (Mateo). Your results will be based on your profile.
-          </p>
+          <p className="mk-hint cap">Example results from a sample profile (Mateo). Your results will be based on your profile.</p>
         </div>
       </section>
 
@@ -136,16 +130,45 @@ export function Landing() {
           <p className="mk-eyebrow">How it works</p>
           <h2 className="mk-l2-h2">Three simple steps.</h2>
           <div className="mk-l2-steps">
-            <div className="mk-card step"><span className="no">1</span><h3>Screenshot your profile</h3><p>Upload screenshots of your profile, bio, and prompts. We&apos;ll extract everything for you.</p></div>
-            <div className="mk-card step"><span className="no">2</span><h3>We analyze &amp; grade it</h3><p>Our AI coach reviews your photos, bio, and prompts to find what&apos;s working and what&apos;s not.</p></div>
-            <div className="mk-card step"><span className="no">3</span><h3>Get your report</h3><p>Your score, feedback, rewrites, and a 5-step plan to level up your profile.</p></div>
-            <div className="mk-card step privacy"><h3>🛡 Privacy first, always.</h3><p>We only analyze your profile. Your photos are deleted automatically after 30 days. No data is shared. Ever.</p></div>
+            <div className="mk-card step">
+              <span className="no">1</span>
+              <h3>Screenshot your profile</h3>
+              <p>Upload screenshots of your profile, bio, and prompts. We&apos;ll extract everything for you.</p>
+              <div className="ill phone"><span style={{ background: "url('/persona/hero.jpg') center/cover" }} /></div>
+            </div>
+            <div className="mk-card step">
+              <span className="no">2</span>
+              <h3>We analyze &amp; grade it</h3>
+              <p>Our AI coach reviews your photos, bio, and prompts to find what&apos;s working and what&apos;s not.</p>
+              <div className="ill ring">
+                <svg viewBox="0 0 96 96" aria-hidden="true">
+                  <circle className="t" cx="48" cy="48" r="42" />
+                  <circle className="p" cx="48" cy="48" r="42" style={{ strokeDashoffset: RING * (1 - 64 / 100) }} />
+                </svg>
+                <span className="n">64</span>
+              </div>
+            </div>
+            <div className="mk-card step">
+              <span className="no">3</span>
+              <h3>Get your report</h3>
+              <p>Your score, feedback, rewrites, and a 5-step plan to level up your profile.</p>
+              <div className="ill chips">
+                <span>✎ New bio ideas</span>
+                <span>▣ Photo feedback</span>
+                <span>☑ Action plan</span>
+              </div>
+            </div>
+            <div className="mk-card step privacy">
+              <h3><span className="sh">🛡</span> Privacy first, always.</h3>
+              <p>We only analyze your profile. Your photos are deleted automatically after 30 days.</p>
+              <p>No data is shared. Ever.</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ---- PRICING ---- */}
-      <section className="mk-band alt" id="pricing">
+      <section className="mk-band" id="pricing">
         <div className="mk-wrap">
           <p className="mk-eyebrow">Pricing</p>
           <h2 className="mk-l2-h2">One payment. Pick your depth.</h2>
@@ -213,10 +236,20 @@ export function Landing() {
   );
 }
 
-function MiniKpi({ label, score, sug }: { label: string; score: number; sug: number }) {
+function ProgressLine() {
+  // Línea ascendente (progreso current→potencial), no una flecha ni gráfica de bolsa.
+  return (
+    <svg className="mk-r2-curve" viewBox="0 0 120 32" aria-hidden="true">
+      <path d="M4,28 C42,26 68,13 110,5" fill="none" stroke="var(--win)" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="110" cy="5" r="3.5" fill="var(--win)" />
+    </svg>
+  );
+}
+
+function MiniKpi({ label, score, sug, icon }: { label: string; score: number; sug: number; icon: ReactNode }) {
   return (
     <div className="mk-l2-mkpi">
-      <span className="lbl">{label}</span>
+      <span className="lbl">{icon} {label}</span>
       <span className="sc">{score}<small>/100</small></span>
       <span className="sug">{sug} suggestions</span>
     </div>
@@ -225,10 +258,25 @@ function MiniKpi({ label, score, sug }: { label: string; score: number; sug: num
 
 function BaRow({ label, v, tone }: { label: string; v: number; tone: 'red' | 'green' }) {
   return (
-    <div className="mk-l2-barow">
+    <div className={`mk-l2-barow ${tone}`}>
       <span className="lbl">{label}</span>
-      <span className="track"><span className="fill" style={{ width: `${v}%`, background: tone === 'green' ? 'var(--win)' : 'var(--pen)' }} /></span>
+      <span className="track"><span className="fill" style={{ width: `${v}%` }} /></span>
       <span className="v">{v}</span>
     </div>
   );
 }
+
+/* ---- iconos (línea, cobre) ---- */
+function svg(children: ReactNode) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
+function IconTarget() { return svg(<><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3.5" /></>); }
+function IconImage() { return svg(<><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9.5" r="1.6" /><path d="M4 18l5-5 4 4 3-3 4 4" /></>); }
+function IconPen() { return svg(<><path d="M16 3l5 5L8 21H3v-5z" /><path d="M13.5 5.5l5 5" /></>); }
+function IconList() { return svg(<><path d="M4 6l2 2 3-3" /><path d="M4 13l2 2 3-3" /><path d="M12 7h8" /><path d="M12 14h8" /><path d="M4 20h16" /></>); }
+function IconSparkle() { return svg(<><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" /></>); }
+function IconChat() { return svg(<><path d="M4 5h16v11H9l-4 4V5z" /></>); }
