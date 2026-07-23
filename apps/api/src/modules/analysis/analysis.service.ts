@@ -52,21 +52,45 @@ export class AnalysisService {
    * Teaser ligero de la puerta falsa (SPEC §12.1.1): UNA sola llamada sobre los
    * screenshots → score + una fortaleza específica + conteo REAL de problemas.
    */
-  async teaser(
-    screenshotUrls: string[],
-  ): Promise<{ score: number; strength: string; problemCount: number; photoCount: number }> {
+  async teaser(screenshotUrls: string[]): Promise<{
+    score: number;
+    potentialScore: number;
+    strength: string;
+    problemCount: number;
+    photoCount: number;
+    categoryScores: {
+      photos: { score: number; suggestions: number };
+      bio: { score: number; suggestions: number };
+      prompts: { score: number; suggestions: number };
+    };
+  }> {
     const prompt = this.prompts.load('teaser');
+    const cat = z.object({
+      score: z.number().int().min(0).max(100),
+      suggestions: z.number().int().min(0).max(20),
+    });
     const schema = z.object({
       score: z.number().int().min(0).max(100),
+      potentialScore: z.number().int().min(0).max(100),
       strength: z.string().min(1),
-      problemCount: z.number().int().min(0).max(20),
+      categoryScores: z.object({ photos: cat, bio: cat, prompts: cat }),
       photoCount: z.number().int().min(0).max(20).default(0),
     });
     let lastError = 'desconocido';
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const raw = await this.provider.generateReportJson(prompt, screenshotUrls);
       const parsed = schema.safeParse(this.parseJson(raw));
-      if (parsed.success) return parsed.data;
+      if (parsed.success) {
+        const d = parsed.data;
+        // Total de problemas = suma de suggestions (única fuente de verdad, SPEC §5.1.2c).
+        const problemCount =
+          d.categoryScores.photos.suggestions +
+          d.categoryScores.bio.suggestions +
+          d.categoryScores.prompts.suggestions;
+        // Garantiza potentialScore > score y ≤ 95 (regla de honestidad).
+        const potentialScore = Math.min(95, Math.max(d.potentialScore, d.score + 1));
+        return { ...d, potentialScore, problemCount };
+      }
       lastError = JSON.stringify(parsed.error.flatten());
       this.logger.warn(`Teaser intento ${attempt}: ${lastError}`);
     }
@@ -110,7 +134,14 @@ export class AnalysisService {
       }
 
       const parsed = reportResultSchema.safeParse(candidate);
-      if (parsed.success) return parsed.data;
+      if (parsed.success) {
+        const r = parsed.data;
+        // Garantiza potentialScore > overallScore y ≤ 95 (SPEC §5.1.2c).
+        if (r.potentialScore != null) {
+          r.potentialScore = Math.min(95, Math.max(r.potentialScore, r.overallScore + 1));
+        }
+        return r;
+      }
 
       lastError = JSON.stringify(parsed.error.flatten());
       prompt = this.withFeedback(basePrompt, lastError);

@@ -27,7 +27,9 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 ## 4. Páginas (frontend)
 1. `/` Landing: promesa, ejemplos de reporte, precios visibles ($14.99 / $34.99), FAQ, CTA. Reglas de la landing:
    - **Un solo protagonista:** el personaje de ejemplo (hero, sample report y fotos premium) es visiblemente LA MISMA persona con el mismo nombre en toda la página — su historia completa (score inicial → diagnóstico → fotos nuevas) demuestra el producto y la promesa de "tu cara se mantiene".
-   - **Prueba social solo con datos reales:** PROHIBIDO "Most chosen", contadores de clientes, o testimonios inventados mientras no existan datos que los respalden. Alternativas honestas permitidas: "Best value" / "Recommended". Cuando haya datos reales, se actualiza con la verdad.
+   - **Prueba social solo con datos reales:** PROHIBIDO "Most chosen", contadores de clientes, ratings de tiendas donde no estamos, testimonios con nombres inventados, logos de prensa ("As seen in...") sin cobertura real, y métricas de impacto inventadas ("+4.3x more matches"). Alternativas honestas permitidas: "Best value" / "Recommended". Cuando haya datos reales, se actualiza con la verdad. Regla operativa: **toda afirmación de la landing debe ser verificable HOY** — si un mockup (humano o generado con IA) trae prueba social, se poda antes de implementar.
+   - **Before/after como mecánica visual (permitido con datos reales):** mostrar el antes/después del protagonista de ejemplo (scores por categoría en barras rojas→verdes, "58 → 94") es válido SIEMPRE que sea el sample ficticio claramente etiquetado como ejemplo (mismo protagonista único) o, más adelante, casos reales con permiso. Nunca presentar el ejemplo como cliente real.
+   - **Nunca prometer "Connect your Tinder profile":** no existe conexión directa a las plataformas (sin API, prohibido por sus términos y por nuestros guardrails). El flujo real y el único que se promete es screenshots (§4.2/§5.0).
    - **"See a sample report" abre un reporte COMPLETO navegable** (la misma vista `/report/[slug]` con datos del protagonista de ejemplo), no un fragmento — es el arma de conversión del escéptico.
    - **Paridad de especificidad:** el nivel de concreción del sample (scores por foto, "61 → 85", quick wins numerados) es el estándar mínimo del reporte real entregado; un reporte real más vago que el sample = bug de producto.
 2. `/start` Intake **screenshot-first** (diseño mobile-first obsesivo — el 90% del tráfico llega desde el teléfono vía TikTok):
@@ -68,6 +70,12 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 {
   "platform": "tinder|hinge|bumble|other",
   "overallScore": 0-100,
+  "potentialScore": 0-100,
+  "categoryScores": {
+    "photos":  { "score": 0-100, "suggestions": 0 },
+    "bio":     { "score": 0-100, "suggestions": 0 },
+    "prompts": { "score": 0-100, "suggestions": 0 }
+  },
   "photos": [{ "index": 0, "score": 0-100, "keep": true, "issues": ["..."], "strengths": ["..."] }],
   "missingArchetypes": ["social proof photo", "hobby photo"],
   "bioDiagnosis": "...",
@@ -77,6 +85,11 @@ Web app de compra única que audita perfiles de citas: el usuario sube fotos + b
 }
 ```
 2b. **IDIOMA DE SALIDA FORZADO (aprendizaje de producción — el teaser salió en español dentro de una UI en inglés):** todo el texto generado por IA (diagnóstico, fortalezas del teaser, explicaciones, plan) sale SIEMPRE en el idioma de la UI (inglés v1), sin importar el idioma del perfil analizado. Se instruye explícito en el prompt (`/prompts/`): "Respond ONLY in {uiLanguage}, regardless of the language of the profile content." EXCEPCIÓN deliberada: las bios y prompts REESCRITOS se entregan en el idioma del perfil original (el usuario los pegará en SU app), pero toda la explicación alrededor va en {uiLanguage}. Cuando existan UI ES/PT, {uiLanguage} sigue el locale.
+2c. **Score potencial y subscores por categoría (mecánicas de conversión — SIEMPRE con datos reales):**
+   - `potentialScore` = estimación honesta del score alcanzable SI se aplica el actionPlan completo. Reglas: debe ser > overallScore, ≤ 95 (nunca prometer perfección), y salir del mismo análisis (no un número fijo ni inflado). El prompt lo justifica internamente ("qué sube y cuánto").
+   - `categoryScores` (photos/bio/prompts) = por categoría, la IA devuelve `score` Y `suggestions` (cuenta sus propios problemas reales de esa categoría). La UI solo pinta — nunca deriva ni recalcula conteos.
+   - **Una sola fuente de verdad para el conteo total:** el "we found N problems" del teaser = suma de `suggestions` de las categorías. Así teaser, chips por categoría y vista bloqueada siempre cuadran entre sí.
+   - Uso en UI: teaser y reporte muestran "Your score: 64 → could reach 91" y el desglose por categoría con su conteo de sugerencias. Es la palanca de identidad aspiracional (vender la distancia, no solo el diagnóstico) — pero cada cifra es trazable al `resultJson`.
 3. Validar el JSON contra schema (zod); si falla, 1 reintento con el error como feedback; si falla de nuevo → status FAILED + alerta al admin.
 4. Generar PDF del reporte (server-side), subir a storage, email al usuario con link.
 - Los prompts de Gemini viven en `/prompts/*.md` versionados en git — NUNCA hardcodeados en el código.
@@ -128,6 +141,7 @@ Aprendizaje de producción: el QC dejó pasar una foto de grupo sin protagonista
 - [ ] Reporte adaptado a la plataforma detectada (verificar con 3 perfiles: uno por plataforma).
 - [ ] Reporte JSON válido en ≥95% de submissions reales de prueba (20 perfiles).
 - [ ] Salida de IA siempre en el idioma de la UI (§5.1.2b): probar con un perfil en español y UI en inglés — cero texto mezclado en teaser y reporte (salvo bios/prompts reescritos, que van en el idioma del perfil).
+- [ ] Score potencial y subscores (§5.1.2c): potentialScore > overallScore y ≤95 en 20 análisis de prueba; conteos de sugerencias por categoría coinciden con los issues reales del `resultJson`; el teaser muestra "score → potencial" y el desglose por categoría.
 - [ ] Vista previa bloqueada (§12.1.2b): renderiza la estructura del reporte real y el contenido cubierto NO es recuperable desde el navegador (verificar con inspeccionar elemento y respuesta de red).
 - [ ] Conteo dinámico: filas de "Problem #N" en la vista bloqueada = conteo del teaser = conteo del `resultJson` (probar con análisis de 3 y de 5 problemas).
 - [ ] CTA sticky visible en móvil durante todo el scroll del reporte bloqueado.
@@ -187,11 +201,12 @@ Costo por orden PREMIUM ($34.99): Gemini ~$0.70 + Replicate ~$0.70 + Stripe ~$1.
 Flujo: el usuario completa el intake (§4.2) → recibe GRATIS un teaser de su análisis → en el pico de curiosidad se muestra precio y CTA → el clic captura correo, no dinero.
 
 - [ ] **12.1.1 — Teaser gratuito post-análisis.** Ejecutar el análisis real (§5.1) y mostrar solo:
-  - Score global (ej. "6.2/10").
-  - **Una fortaleza real y específica** extraída del análisis (no genérica: debe citar algo concreto de SU perfil).
+  - Score global (ej. "6.2/10") **+ score potencial** ("→ could reach 8.7 with our fixes") — la mecánica de vender la distancia (§5.1.2c), con datos reales del análisis.
+  - **Subscores por categoría** (Photos / Bio / Prompts) con su conteo real de sugerencias ("Photos 72 · 3 suggestions") — más específico y creíble que un número único; el detalle de cada sugerencia queda bloqueado (§12.1.2b).
+  - **Una fortaleza real y específica** extraída del análisis (no genérica: debe citar algo concreto de SU perfil), en el idioma de la UI (§5.1.2b).
   - **Conteo de problemas detectados SIN revelarlos**: "Detectamos 3 problemas que están espantando tus matches."
-  - Copy placeholder (EN): *"Your profile scored 6.2/10. Your first photo is genuinely strong — sharp, warm, real eye contact. But we found 3 problems that are pushing matches away. They're all fixable."*
-  - REGLA: el conteo de problemas debe ser REAL (sale del `resultJson`), nunca un número inventado.
+  - Copy placeholder (EN): *"Your profile scored 6.2/10 — it could reach 8.7. Your first photo is genuinely strong. But we found 3 problems pushing matches away. They're all fixable."*
+  - REGLA: TODO número mostrado (score, potencial, subscores, conteos) sale del `resultJson` — nunca inventado, nunca fijo.
 - [ ] **12.1.2 — Bloque de precio + CTA.** Debajo de la vista bloqueada (12.1.2b): precio visible y botón de desbloqueo.
   - Copy placeholder (EN): botón *"Unlock my full report — $14.99"*.
   - El bloque premium ($34.99) se muestra como segunda opción, igual que en §4.1.

@@ -23,11 +23,27 @@ export const suggestedPromptSchema = z.object({
   answer: z.string().min(1),
 });
 
+/** Subscore por categoría (SPEC §5.1.2c): la IA devuelve score Y conteo de sugerencias. */
+export const categoryScoreSchema = z.object({
+  score,
+  suggestions: z.number().int().min(0),
+});
+
+export const categoryScoresSchema = z.object({
+  photos: categoryScoreSchema,
+  bio: categoryScoreSchema,
+  prompts: categoryScoreSchema,
+});
+
 export const reportResultSchema = z.object({
   // Plataforma para la que está optimizado el reporte (SPEC §5.1). Opcional para
   // tolerar reportes antiguos; el prompt pide incluirla.
   platform: z.enum(PLATFORMS).optional(),
   overallScore: score,
+  // Score alcanzable con el actionPlan aplicado (SPEC §5.1.2c). Opcional para
+  // tolerar reportes antiguos; el prompt lo pide siempre para reportes nuevos.
+  potentialScore: score.optional(),
+  categoryScores: categoryScoresSchema.optional(),
   photos: z.array(photoAnalysisSchema).min(1),
   missingArchetypes: z.array(z.string()),
   bioDiagnosis: z.string().min(1),
@@ -40,6 +56,7 @@ export const reportResultSchema = z.object({
 
 export type PhotoAnalysis = z.infer<typeof photoAnalysisSchema>;
 export type SuggestedPrompt = z.infer<typeof suggestedPromptSchema>;
+export type CategoryScores = z.infer<typeof categoryScoresSchema>;
 export type ReportResult = z.infer<typeof reportResultSchema>;
 
 /** Objetivos de producto (para prompts / UI), no restricciones duras del schema. */

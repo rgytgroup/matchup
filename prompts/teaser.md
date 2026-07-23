@@ -15,15 +15,29 @@ text must be in English even if the profile is in another language.
 ## Qué devolver
 1. **score**: overall profile quality, integer 0–100 (be honest and calibrated — most real
    profiles land 40–70; reserve 80+ for genuinely strong ones).
-2. **strength**: ONE real, SPECIFIC strength you can point to in THIS profile. Must cite something
+2. **potentialScore**: the score this profile could realistically reach if the problems are fixed.
+   MUST be strictly greater than `score` and at most 95 (never promise perfection). Real estimate.
+3. **strength**: ONE real, SPECIFIC strength you can point to in THIS profile. Must cite something
    concrete (a specific photo, a specific line). Never generic ("nice photos"). One sentence.
-3. **problemCount**: how many distinct, fixable problems are hurting their matches (integer, be
-   realistic — usually 2–5). This is a COUNT only; do not list them (the paid report reveals them).
-4. **photoCount**: how many distinct profile PHOTOS of the person are visible across the
+4. **categoryScores** (`photos`, `bio`, `prompts`): for each, a `score` (0–100) AND `suggestions` =
+   the integer count of concrete fixable problems you found in that category. Do NOT invent counts.
+   (If a category is absent, e.g. no prompts on Tinder, score on absence and set suggestions.)
+5. **photoCount**: how many distinct profile PHOTOS of the person are visible across the
    screenshots (integer; used only to render the locked preview rows).
 
 ## Salida (JSON obligatorio, sin prosa alrededor, sin markdown fences)
 ```json
-{ "score": 62, "strength": "Your first photo is genuinely strong — sharp, warm, real eye contact.", "problemCount": 3, "photoCount": 5 }
+{
+  "score": 62,
+  "potentialScore": 88,
+  "strength": "Your first photo is genuinely strong — sharp, warm, real eye contact.",
+  "categoryScores": {
+    "photos":  { "score": 72, "suggestions": 2 },
+    "bio":     { "score": 48, "suggestions": 1 },
+    "prompts": { "score": 55, "suggestions": 0 }
+  },
+  "photoCount": 5
+}
 ```
+The total problem count shown to the user is the SUM of the three `suggestions` — do not return it separately.
 Return ONLY the JSON object.

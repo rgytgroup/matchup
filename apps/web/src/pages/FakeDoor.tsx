@@ -2,18 +2,12 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Layout } from '../components/Layout';
 import { ReportView } from '../components/ReportView';
-import { clientMeta, postLead, postTeaser, track } from '../api';
+import { clientMeta, postLead, postTeaser, track, type TeaserResult } from '../api';
 
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 const SHARE_URL = 'truly.dating';
 
-type Teaser = {
-  teaserId: string;
-  score: number;
-  strength: string;
-  problemCount: number;
-  photoCount: number;
-};
+type Teaser = TeaserResult;
 
 /**
  * Puerta falsa (SPEC §12): intake de screenshots → teaser gratis → precio → captura de correo.
@@ -159,7 +153,14 @@ export function FakeDoor({ priceAb }: { priceAb: boolean }) {
                 {(teaser.score / 10).toFixed(1)}
                 <span>/10</span>
               </div>
-              <p className="mk-eyebrow" style={{ margin: 0 }}>Your profile score</p>
+              <p className="mk-eyebrow" style={{ margin: 0 }}>
+                Your score · could reach {(teaser.potentialScore / 10).toFixed(1)}
+              </p>
+            </div>
+            <div className="mk-cat-chips">
+              <CatChip label="Photos" c={teaser.categoryScores.photos} />
+              <CatChip label="Bio" c={teaser.categoryScores.bio} />
+              <CatChip label="Prompts" c={teaser.categoryScores.prompts} />
             </div>
             <div className="mk-card mk-teaser-card">
               <p className="win">✦ {teaser.strength}</p>
@@ -238,5 +239,18 @@ export function FakeDoor({ priceAb }: { priceAb: boolean }) {
         </div>
       )}
     </Layout>
+  );
+}
+
+/** Chip de subscore por categoría (SPEC §5.1.2c): score + conteo real de sugerencias. */
+function CatChip({ label, c }: { label: string; c: { score: number; suggestions: number } }) {
+  return (
+    <div className="mk-cat-chip">
+      <span className="lbl">{label}</span>
+      <span className="sc">{c.score}</span>
+      <span className="sug">
+        {c.suggestions} {c.suggestions === 1 ? 'suggestion' : 'suggestions'}
+      </span>
+    </div>
   );
 }

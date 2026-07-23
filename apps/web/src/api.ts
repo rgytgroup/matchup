@@ -35,9 +35,21 @@ export async function getConfig(): Promise<{ fakeDoor: boolean; priceAb: boolean
 }
 
 /** Teaser gratuito de la puerta falsa: sube screenshots → score + fortaleza + #problemas. */
-export async function postTeaser(
-  form: FormData,
-): Promise<{ teaserId: string; score: number; strength: string; problemCount: number; photoCount: number }> {
+export interface TeaserResult {
+  teaserId: string;
+  score: number;
+  potentialScore: number;
+  strength: string;
+  problemCount: number;
+  photoCount: number;
+  categoryScores: {
+    photos: { score: number; suggestions: number };
+    bio: { score: number; suggestions: number };
+    prompts: { score: number; suggestions: number };
+  };
+}
+
+export async function postTeaser(form: FormData): Promise<TeaserResult> {
   return parse(await fetch(`${API_URL}/teaser`, { method: 'POST', body: form }));
 }
 

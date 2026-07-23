@@ -75,10 +75,25 @@ export function ReportView({
             </div>
             <div className="meta">
               <span className="cap">out of 100</span>
+              {r.potentialScore != null && (
+                <span className="mk-potential">↑ could reach {r.potentialScore}</span>
+              )}
               {r.platform && <span className="mk-badge">Optimized for {PLATFORM_LABELS[r.platform]}</span>}
             </div>
           </div>
         </section>
+
+        {/* Category breakdown (SPEC §5.1.2c) */}
+        {r.categoryScores && (
+          <section className="mk-card">
+            <h2>Where you can improve</h2>
+            <div className="mk-catrows">
+              <CatRow label="Photos" c={r.categoryScores.photos} />
+              <CatRow label="Bio" c={r.categoryScores.bio} />
+              <CatRow label="Prompts" c={r.categoryScores.prompts} />
+            </div>
+          </section>
+        )}
 
         {/* Photo by photo */}
         <section className="mk-card">
@@ -301,6 +316,23 @@ function LockedReport({
         </section>
       </div>
       {footer}
+    </div>
+  );
+}
+
+/** Fila de subscore por categoría (SPEC §5.1.2c): barra coloreada + score + #sugerencias. */
+function CatRow({ label, c }: { label: string; c: { score: number; suggestions: number } }) {
+  const color = c.score >= 70 ? 'var(--win)' : c.score >= 45 ? 'var(--honey)' : 'var(--pen)';
+  return (
+    <div className="mk-catrow">
+      <span className="lbl">{label}</span>
+      <span className="track">
+        <span className="fill" style={{ width: `${c.score}%`, background: color }} />
+      </span>
+      <span className="meta">
+        <span className="sc">{c.score}</span>
+        {c.suggestions > 0 && <div className="sug">{c.suggestions} to fix</div>}
+      </span>
     </div>
   );
 }

@@ -44,6 +44,12 @@ Return ONLY a JSON object with exactly these keys:
 {
   "platform": "tinder|hinge|bumble|other",
   "overallScore": 0,
+  "potentialScore": 0,
+  "categoryScores": {
+    "photos":  { "score": 0, "suggestions": 0 },
+    "bio":     { "score": 0, "suggestions": 0 },
+    "prompts": { "score": 0, "suggestions": 0 }
+  },
   "photos": [{ "index": 0, "score": 0, "keep": true, "issues": ["..."], "strengths": ["..."] }],
   "missingArchetypes": ["..."],
   "bioDiagnosis": "...",
@@ -54,3 +60,8 @@ Return ONLY a JSON object with exactly these keys:
 ```
 
 Scores are integers 0–100. `overallScore` reflects the profile as a whole, not just the average of photo scores.
+
+## Score potencial y subscores (SPEC §5.1.2c) — SIEMPRE con datos reales, nunca inflados
+- **`potentialScore`**: the score this profile could realistically reach IF the user applies your full `actionPlan`. It MUST be strictly greater than `overallScore`, at most 95 (never promise perfection), and justified by your own analysis — decide it from how much the concrete fixes would lift the profile, not a fixed number.
+- **`categoryScores`** (`photos`, `bio`, `prompts`): for each category give a `score` (0–100) AND `suggestions` = the integer count of concrete, fixable problems YOU found in that category. This count must match the real issues you're reporting (photo `issues`, bio weaknesses, prompt gaps). If a category has no prompts to judge (e.g. Tinder), score it on absence and set suggestions accordingly. Do NOT invent counts.
+- Consistency: the sum of the three `suggestions` should equal the total number of distinct problems the profile has — this same total is what the teaser announces ("we found N problems").

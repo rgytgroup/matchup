@@ -310,6 +310,28 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .mk-teaser-unlock .mk-hint { max-width: 42ch; }
 .mk-teaser-banner { display: flex; flex-direction: column; gap: 1.2rem; margin-bottom: 1.6rem; }
 
+/* subscores por categoría (§5.1.2c) */
+.mk-cat-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
+.mk-cat-chip { display: flex; flex-direction: column; gap: .15rem; align-items: center; text-align: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: .75rem .5rem; }
+.mk-cat-chip .lbl { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; }
+.mk-cat-chip .sc { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; line-height: 1; }
+.mk-cat-chip .sug { font-size: .72rem; color: var(--honey-deep); font-weight: 600; }
+:root[data-theme="dark"] .mk-cat-chip .sug { color: var(--honey); }
+@media (prefers-color-scheme: dark) { .mk-cat-chip .sug { color: var(--honey); } }
+
+/* potencial junto al score global + desglose por categoría en el reporte real */
+.mk-potential { display: inline-block; font-size: .82rem; font-weight: 700; color: var(--win); background: var(--win-wash); padding: .3rem .7rem; border-radius: 999px; }
+.mk-catrows { display: grid; gap: 1rem; }
+.mk-catrow { display: grid; grid-template-columns: 74px 1fr auto; align-items: center; gap: .7rem; }
+.mk-catrow .lbl { font-weight: 700; }
+.mk-catrow .track { height: 9px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.mk-catrow .fill { height: 100%; border-radius: 99px; }
+.mk-catrow .meta { text-align: right; font-size: .85rem; }
+.mk-catrow .meta .sc { font-weight: 800; font-variant-numeric: tabular-nums; }
+.mk-catrow .meta .sug { color: var(--honey-deep); font-size: .78rem; }
+:root[data-theme="dark"] .mk-catrow .meta .sug { color: var(--honey); }
+@media (prefers-color-scheme: dark) { .mk-catrow .meta .sug { color: var(--honey); } }
+
 /* vista bloqueada del reporte (§12.1.2b) — solo placeholders, cero contenido real */
 .mk-lock { font-size: .8em; vertical-align: middle; }
 .mk-lockbar { display: inline-block; height: .95rem; border-radius: 6px; opacity: .85; filter: blur(1.6px);

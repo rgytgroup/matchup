@@ -22,6 +22,12 @@ const MATEO_PHOTOS = [
 const SAMPLE_RESULT: ReportResult = {
   platform: 'tinder',
   overallScore: 61,
+  potentialScore: 88,
+  categoryScores: {
+    photos: { score: 66, suggestions: 3 },
+    bio: { score: 52, suggestions: 1 },
+    prompts: { score: 70, suggestions: 1 },
+  },
   missingArchetypes: ['A candid photo doing something you love', 'A clear full-body shot'],
   photos: [
     {
