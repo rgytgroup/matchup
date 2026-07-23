@@ -111,7 +111,7 @@ export function Landing() {
         <div className="mk-wrap mk-l2-ba">
           <div className="photos">
             <div className="ph before" style={{ background: "url('/persona/city.jpg') center/cover" }}><span>BEFORE</span></div>
-            <div className="ph after" style={{ background: "url('/persona/studio.jpg') center/cover" }}><span className="g">AFTER</span></div>
+            <div className="ph after" style={{ background: "url('/persona/hero.jpg') center/cover" }}><span className="g">AFTER</span></div>
           </div>
           <div className="mk-card compare">
             <div className="col">

@@ -67,6 +67,7 @@ export function ReportView({
     <div className="mk-r2">
       {banner}
 
+      <div className="mk-r2-grid">
       {/* Sidebar sticky (desktop) */}
       <aside className="mk-r2-side">
         {subject && (
@@ -230,6 +231,7 @@ export function ReportView({
 
         {footer}
       </main>
+      </div>
     </div>
   );
 }
