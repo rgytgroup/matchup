@@ -315,15 +315,74 @@ Sin esto, el tráfico se desperdicia: no se puede aprender de visitantes que no 
 - **Semántica de color:** cobre/naranja = acento de marca y CTAs; **verde SOLO para KEEP/positivo; ámbar SOLO para advertencias**; rojo para scores bajos/before. No usar verde ni ámbar decorativamente.
 - **Sensación objetivo:** honestidad, coaching profesional, autoridad, acciones claras. NO debe sentirse como: demo de IA, muro de texto, app de citas genérica, template SaaS.
 - **Jerarquía sobre uniformidad:** evitar que todas las tarjetas se vean idénticas; la jerarquía visual guía el ojo. Solo 4 elementos dominan cualquier vista: score actual, score potencial, conteo de sugerencias, plan de acción.
-- Los tokens exactos (hex, tipografía, espaciados) los define el entregable del diseñador — este SPEC fija las reglas y comportamientos, no los píxeles.
+- Los tokens exactos están definidos abajo en §13.4 (entregados por el diseñador) — son el contrato de color/tipografía/layout. NUNCA colores hardcodeados en componentes: todo pasa por tokens semánticos (variables CSS).
 
 ### 13.3 Podas obligatorias sobre los mockups del diseñador (antes de implementar)
 - "Most popular" → **"Best value"** (sin datos, sin superlativos de popularidad).
 - Corregir typo "Sew it works" → "How it works".
 - "Based on 14 data points" SOLO si el número es real y dinámico del análisis; si es decorativo, se elimina.
 - Footer: la entidad correcta (no "Truly Labs Inc." ni "gyrgroup").
-- La mini-gráfica de tendencia del hero NO puede ser decorativa (no existe historial de scores): se elimina o se convierte explícitamente en ilustración del camino actual→potencial, etiquetada como tal.
+- La mini-gráfica de tendencia del hero SE ELIMINA (decisión del diseñador: parece gráfica de acciones, no personas). Se reemplaza por una representación de progreso: "Current 61 → Potential 84" con flecha elegante, arco o anillo incompleto. Nunca una curva tipo bolsa de valores.
 - Regla permanente de §4.1: toda afirmación verificable HOY; se poda cualquier prueba social que un mockup traiga por defecto.
+
+
+### 13.4 Design tokens (contrato de implementación — entregado por el diseñador)
+
+**Arquitectura:** primitivos → tokens semánticos → componentes. Los componentes SOLO consumen tokens semánticos (variables CSS). Prohibido hardcodear un hex en un componente.
+
+**Fondos y superficies (3 niveles de profundidad):**
+| Token | Valor | Uso |
+|---|---|---|
+| `background` | `#19161D` | Fondo principal — oscuro con matiz cálido. NUNCA `#000000` |
+| `surface` | `#241F29` | Cards (nivel 1) |
+| `surface-elevated` | `#2C2633` | Hero, modal, sidebar, cards elevadas (nivel 2) |
+| `border` | `#3A3443` (o `rgba(255,255,255,.08)`) | Bordes sutiles, máx 1px |
+
+**Acento (cobre) — sin degradados:**
+| Token | Valor |
+|---|---|
+| `accent` / botón primario | `#D9872A` |
+| `accent-hover` | `#E59A43` |
+| `accent-pressed` | `#BD7220` |
+| `focus-ring` | `rgba(217,135,42,.25)` |
+
+**Texto:**
+| Token | Valor |
+|---|---|
+| `text-primary` | `#F7F4F0` |
+| `text-secondary` | `#B4ADB8` |
+| `text-tertiary` | `#8C8591` |
+| `text-disabled` | `#66616D` |
+
+**Funcionales (semántica de §13.2):**
+| Token | Valor | Regla |
+|---|---|---|
+| `success` (KEEP) | `#43C07B` | Verde SOLO para KEEP/positivo |
+| `warning` | `#E2A33A` | Ámbar SOLO para advertencias/DROP |
+| `danger` | `#D05C5C` | Rojo apagado — nunca rojo brillante |
+
+**Botón secundario (corrige el mockup — nunca outline blanco):**
+fondo `transparent` + borde `1px #3A3443` + texto `#F7F4F0`; hover: fondo `#2C2633`.
+
+**Badges — siempre translúcidos, nunca sólidos:**
+| Badge | Fondo | Texto |
+|---|---|---|
+| KEEP | `rgba(67,192,123,.15)` | `#43C07B` |
+| DROP | `rgba(226,163,58,.15)` | `#E2A33A` |
+| BEST | `rgba(217,135,42,.18)` | `#D9872A` |
+
+**Tipografía:** Inter (o Geist). Escala: Hero 64/700 · H1 48/700 · H2 32/700 · Card title 20/600 · Body 16/400 · Small 14/400 · Caption 12/500 · Score 72/700.
+
+**Radios:** cards 20px · buttons 14px · badges 999px (pill) · inputs 16px.
+
+**Espaciado:** base 8px; escala permitida 8/16/24/32/48/64/96. Prohibidos valores fuera de escala (27, 19, 53...).
+
+**Layout (anchos máximos):** landing 1280px · reporte 1440px · contenido 1000px · sidebar 280px.
+
+**Breakpoints:** mobile 0–767 · tablet 768–1199 · desktop 1200+. En tablet el hero NO va a tres columnas: apila Score → Widgets → Contenido.
+
+### 13.5 PDF en versión clara (decisión del diseñador)
+El reporte web es oscuro (premium); el **PDF descargable va en versión CLARA**: fondo blanco, texto negro, acentos cobre, KEEP verde, DROP ámbar. Razones: imprime mejor, gasta menos tinta, se comparte/lee mejor. Implica una hoja de estilos de impresión propia para la generación del PDF (§5.1.4) — no un screenshot del tema oscuro.
 
 ## 14. Reporte v2 — Dashboard de diagnóstico (rediseño completo)
 
@@ -382,4 +441,7 @@ El rediseño no agrega más IA — hace que el diagnóstico se sienta valioso. E
 - [ ] Mobile: dashboard primero, navegación horizontal, grid 2×2, scroll horizontal de fotos.
 - [ ] Sample de Mateo (`/sample`) migrado al v2 — la paridad sample↔real se mantiene (mismo componente).
 - [ ] Legible y escaneable en modo oscuro: ningún bloque de texto corrido largo; todo en tarjetas/marcas.
-- [ ] Cero elementos decorativos con apariencia de dato (gráficas sin datos reales, contadores inventados).
+- [ ] Cero elementos decorativos con apariencia de dato (gráficas sin datos reales, contadores inventados); el hero usa la representación de progreso current→potential (flecha/arco), no curvas tipo bolsa.
+- [ ] Todos los componentes consumen tokens semánticos de §13.4 (verificable: cero hex hardcodeados en componentes); fondo `#19161D`, tres niveles de superficie, botón secundario según §13.4.
+- [ ] PDF en versión clara (§13.5) con su propia hoja de estilos de impresión — no captura del tema oscuro.
+- [ ] Desktop respeta layout de §13.4: contenido máx 1000px, sidebar 280px sticky, breakpoints 768/1200; tablet apila (sin tres columnas).

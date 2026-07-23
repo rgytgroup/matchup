@@ -252,11 +252,15 @@ function ScoreRing({ label, value, tone }: { label: string; value: number; tone:
 }
 
 function PotentialCurve() {
-  // Ilustración del camino actual→potencial (SPEC §13.3): NO es un dato histórico.
+  // Flecha/arco current→potencial (SPEC §13.3): NO una curva tipo bolsa de valores.
   return (
-    <svg className="mk-r2-curve" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M2,34 C40,32 60,18 118,6" fill="none" stroke="var(--win)" strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="118" cy="6" r="3.5" fill="var(--win)" />
+    <svg className="mk-r2-curve" viewBox="0 0 120 34" aria-hidden="true">
+      <defs>
+        <marker id="ah-r" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 Z" fill="var(--win)" />
+        </marker>
+      </defs>
+      <path d="M6,28 Q74,28 106,9" fill="none" stroke="var(--win)" strokeWidth="2.5" strokeLinecap="round" markerEnd="url(#ah-r)" />
     </svg>
   );
 }

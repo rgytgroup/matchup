@@ -2,9 +2,14 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { PLATFORM_LABELS, type ReportResult } from '@matchup/shared';
 
-const INK = '#0f172a';
-const MUTED = '#475569';
-const LIGHT = '#64748b';
+// PDF en versión CLARA (SPEC §13.5): fondo blanco, texto negro, acentos cobre,
+// KEEP verde, DROP ámbar. Imprime mejor y se lee/comparte mejor que el tema oscuro.
+const INK = '#1E1912';
+const MUTED = '#5A5248';
+const LIGHT = '#8A8278';
+const ACCENT = '#C9741F';
+const GREEN = '#2E9E5F';
+const AMBER = '#B77B12';
 const MARGIN = 50;
 
 /**
@@ -22,14 +27,10 @@ export class ReportPdfService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      // Header de marca.
-      doc.rect(0, 0, doc.page.width, 92).fill(INK);
-      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(26).text('Truly', MARGIN, 30);
-      doc
-        .font('Helvetica')
-        .fontSize(11)
-        .fillColor('#cbd5e1')
-        .text('Honest AI dating profile audit', MARGIN, 62);
+      // Header de marca (claro): logo cobre + regla cobre.
+      doc.fillColor(ACCENT).font('Helvetica-Bold').fontSize(26).text('Truly', MARGIN, 34);
+      doc.font('Helvetica').fontSize(11).fillColor(MUTED).text('Honest AI dating profile audit', MARGIN, 66);
+      doc.rect(MARGIN, 88, doc.page.width - MARGIN * 2, 2).fill(ACCENT);
 
       // Cuerpo.
       doc.fillColor(INK);
@@ -58,7 +59,7 @@ export class ReportPdfService {
           .fillColor(INK)
           .text(`Photo ${p.index + 1} — ${p.score}/100`, { continued: true })
           .font('Helvetica')
-          .fillColor(p.keep ? '#16a34a' : '#d97706')
+          .fillColor(p.keep ? GREEN : AMBER)
           .text(p.keep ? '   ·  Keep' : '   ·  Consider dropping');
         if (p.issues.length) {
           doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(`Issues: ${p.issues.join('; ')}`);
@@ -120,7 +121,7 @@ export class ReportPdfService {
   private section(doc: PDFKit.PDFDocument, title: string): void {
     doc.moveDown(0.9);
     const y = doc.y;
-    doc.rect(MARGIN, y + 2, 4, 14).fill(INK); // barra de acento
+    doc.rect(MARGIN, y + 2, 4, 14).fill(ACCENT); // barra de acento cobre
     doc.font('Helvetica-Bold').fontSize(14).fillColor(INK).text(title, MARGIN + 12, y);
     doc.moveDown(0.4);
     doc.x = MARGIN;
